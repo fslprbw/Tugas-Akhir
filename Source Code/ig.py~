@@ -29,7 +29,7 @@ requests_session.mount('file://', LocalFileAdapter())
 
 number = 1
 
-with open('../Resource/test.csv', 'w') as csvfile:
+with open('../Resource/data.csv', 'w') as csvfile:
     fieldnames = ['no','id', 'content','main post']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
