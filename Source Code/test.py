@@ -16,6 +16,13 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 
 def pre_process(text):
+	#turn emoticon to unicode
+	text = unicode(text, 'utf-8')
+	text = text.encode('unicode_escape')
+	#convert emoticon
+	text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
+	#convert unicode of newline to newline
+	text = re.sub(r'\\n','',text)
 	#Convert to lower case
 	text = ''.join(text).lower()
 	# Convert www.* or https?://* to URL
@@ -139,17 +146,17 @@ def cross_fold_validation(number_of_fold, number_of_data_tested, list_of_comment
 		
 	if algorithm == "NB":
 		print "-- Naive Bayes --"
-		print confusion_matrix(Y,result_NB_label, labels=["dijawab", "dibaca", "dihitung", "diabaikan"])
+		print confusion_matrix(Y,result_NB_label, labels=["jawab", "baca", "hitung", "abaikan"])
 		print sum_NB_acc/num_folds
 
 	elif algorithm == "DT":
 		print "-- Decision Tree --"
-		print confusion_matrix(Y,result_DT_label, labels=["dijawab", "dibaca", "dihitung", "diabaikan"])
+		print confusion_matrix(Y,result_DT_label, labels=["jawab", "baca", "hitung", "abaikan"])
 		print sum_DT_acc/num_folds
 
 	elif algorithm == "SVM":
 		print "-- Support Vector Machine --"
-		print confusion_matrix(Y,result_SVM_label, labels=["dijawab", "dibaca", "dihitung", "diabaikan"])
+		print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "hitung", "abaikan"])
 		print sum_SVM_acc/num_folds
 
 	else :
@@ -170,19 +177,21 @@ for index in range(len(list_of_data)):
 	if poster_status == 'yes':
 		poster = list_of_data[index][0]
 	else:
-		comment = list_of_data[index][1]
-		label = list_of_data[index][3]
+		if list_of_data[index][0] != poster:
+			comment = list_of_data[index][1]
+			label = list_of_data[index][3]
 
-		processed_comment = pre_process(comment)
-		# processed_comment = nltk.word_tokenize(comment)
-		print feature_extraction(nltk.word_tokenize(processed_comment))
-		bag_of_feature += feature_extraction(nltk.word_tokenize(processed_comment))
-		# list_of_feature.append(feature_extraction(processed_comment))
-		list_of_label.append(label)
-		list_of_comment.append(processed_comment)
+			processed_comment = pre_process(comment)
+			# processed_comment = nltk.word_tokenize(comment)
+			# print feature_extraction(nltk.word_tokenize(processed_comment))
+			bag_of_feature += feature_extraction(nltk.word_tokenize(processed_comment))
+			# list_of_feature.append(feature_extraction(processed_comment))
+			list_of_label.append(label)
+			list_of_comment.append(processed_comment)
 
 show_feature_info(bag_of_feature)
+print len(list_of_label)
 
-cross_fold_validation(10, 90, list_of_comment, list_of_label, "SVM")
-cross_fold_validation(10, 90, list_of_comment, list_of_label, "DT")
-cross_fold_validation(10, 90, list_of_comment, list_of_label, "NB")
+cross_fold_validation(10, 980, list_of_comment, list_of_label, "SVM")
+cross_fold_validation(10, 980, list_of_comment, list_of_label, "DT")
+cross_fold_validation(10, 980, list_of_comment, list_of_label, "NB")

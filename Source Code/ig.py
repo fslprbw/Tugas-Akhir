@@ -29,8 +29,8 @@ requests_session.mount('file://', LocalFileAdapter())
 
 number = 1
 
-with open('../Resource/test.csv', 'w') as csvfile:
-    fieldnames = ['no','id', 'content','main post']
+with open('../Resource/data.csv', 'w') as csvfile:
+    fieldnames = ['no','id', 'content','main post','poster post']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
 
@@ -53,9 +53,13 @@ with open('../Resource/test.csv', 'w') as csvfile:
             konten.append(results.text_content().encode('utf-8'))
 
         for index in range(len(akun)):
-            if (index):
-                writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'no'})
+            if index == 0:
+                writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'yes' , 'poster post':'yes'})
+                poster = akun[index]
             else:
-                writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'yes'})
+                if akun[index] == poster:
+                    writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'no', 'poster post':'yes'})
+                else:
+                    writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'no', 'poster post':'no'})
             number += 1
         
