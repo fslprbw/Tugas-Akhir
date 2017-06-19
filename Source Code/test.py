@@ -10,6 +10,7 @@ from nltk.util import ngrams
 from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
 from sklearn import metrics
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
@@ -19,29 +20,26 @@ def pre_process(text):
 	#turn emoticon to unicode
 	text = unicode(text, 'utf-8')
 	text = text.encode('unicode_escape')
-	#convert emoticon
-	text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
 	#convert unicode of newline to newline
 	text = re.sub(r'\\n','',text)
-	#Convert to lower case
-	text = ''.join(text).lower()
 	# Convert www.* or https?://* to URL
 	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
+	#Replace #word with word
+	text = re.sub(r'#([^\s]+)', r'\1', text)
 	#Convert @username to AT_USER
 	text = re.sub('@'+poster,' _mentionpemilik_ ',text)
 	text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
-	#Replace #word with word
-	text = re.sub(r'#([^\s]+)', r'\1', text)
-	#Remove koma
+	#Convert mark
 	text = re.sub('[,]+', '', text)
-	#Remove koma
 	text = re.sub('[.]+', ' _tanda_titik_ ', text)
-	#Remove koma
 	text = re.sub('[?]+', ' _tanda_tanya_ ', text)
-	#Remove koma
 	text = re.sub('[!]+', ' _tanda_seru_ ', text)
+	#convert emoticon and symbol
+	text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
 	#Remove additional white spaces
 	text = re.sub('[\s]+', ' ', text)
+	#Convert to lower case
+	text = ''.join(text).lower()
 	return text
 
 # def feature_extraction(text, sentence_number, label):
@@ -82,15 +80,32 @@ def read_csv(file_directory):
 def show_feature_info(bag_of_feature):
 	count = Counter(bag_of_feature)
 	print 'Jumlah Feature = ', len(list(count))
-	print "== All Features =="
-	print count
+	# print "== All Features =="
+	# print count
+
+def data_distribution(list_of_label):
+	jawab = 0
+	baca = 0
+	abaikan = 0
+	for index in range(len(list_of_label)):
+		if list_of_label[index] == "jawab":
+			jawab += 1
+		elif list_of_label[index] == "baca":
+			baca += 1			
+		elif list_of_label[index] == "abaikan":
+			abaikan += 1
+		else:
+			print index
+			print list_of_comment[index-1]
+	print "jawab : ", jawab, " - baca : ", baca, " - abaikan : ", abaikan
+
 
 #algorthm --> NB for naive bayes, DT for decision tree, SVM for support vector machie
-def cross_fold_validation(number_of_fold, number_of_data_tested, list_of_comment, list_of_label, algorithm):
+def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algorithm):
 	cv = CountVectorizer()
 	num_folds = number_of_fold
-	size = number_of_data_tested
-	subset_size = number_of_data_tested/num_folds
+	size = len(list_of_label)
+	subset_size = size/num_folds
 	sum_NB_acc = 0
 	sum_DT_acc = 0
 	sum_SVM_acc = 0
@@ -101,24 +116,32 @@ def cross_fold_validation(number_of_fold, number_of_data_tested, list_of_comment
 	X = cv.fit_transform(list_of_comment).toarray()
 	Y = np.array(list_of_label)
 
-	X = X[:number_of_data_tested]
-	Y = Y[:number_of_data_tested]
-
-	for index in range (0, size, subset_size):
-		test_comment_round = X[index:index+subset_size]
-		test_label_round = Y[index:index+subset_size]
+	for index in range(10):
+		if index < size % num_folds:
+			test_start = index*(subset_size+1)
+			test_finish = test_start + subset_size + 1
+		else:
+			test_start = (index*subset_size) + (size % num_folds)
+			test_finish = test_start + subset_size
+		
+		test_comment_round = X[test_start:test_finish]
+		test_label_round = Y[test_start:test_finish]
 		train_comment_round = []
 		train_label_round = []
-		# print "train"
-		# print train_label_round
-		for j in range(0, size, subset_size):
+		for j in range(10):
+			if j < size % num_folds:
+				train_start = j*(subset_size+1)
+				train_finish = train_start + subset_size + 1
+			else:
+				train_start = (j*subset_size) + (size % num_folds)
+				train_finish = train_start + subset_size
 			if index != j:
 				if (len(train_comment_round) == 0):
-					train_comment_round = (X[j:j+subset_size])
-					train_label_round = (Y[j:j+subset_size])
+					train_comment_round = (X[train_start:train_finish])
+					train_label_round = (Y[train_start:train_finish])
 				else:
-					train_comment_round = np.concatenate((train_comment_round,X[j:j+subset_size]))
-					train_label_round = np.concatenate((train_label_round,Y[j:j+subset_size]))
+					train_comment_round = np.concatenate((train_comment_round,X[train_start:train_finish]))
+					train_label_round = np.concatenate((train_label_round,Y[train_start:train_finish]))
 
 		if algorithm == "NB":
 			clf = GaussianNB()
@@ -141,23 +164,26 @@ def cross_fold_validation(number_of_fold, number_of_data_tested, list_of_comment
 		    max_iter=-1, probability=False, random_state=None, shrinking=True,
 		    tol=0.001, verbose=False)
 			clf.fit(train_comment_round, train_label_round)
-			result_SVM_label = np.concatenate((result_SVM_label,clf.predict(test_comment_round)))
+			result_SVM_label = np.concatenate((result_SVM_label,clf.predict(test_comment_round)))			
 			sum_SVM_acc += metrics.accuracy_score(test_label_round, clf.predict(test_comment_round))
 		
 	if algorithm == "NB":
 		print "-- Naive Bayes --"
-		print confusion_matrix(Y,result_NB_label, labels=["jawab", "baca", "hitung", "abaikan"])
+		print confusion_matrix(Y,result_NB_label, labels=["jawab", "baca", "abaikan"])
 		print sum_NB_acc/num_folds
+		print (classification_report(Y, result_NB_label, target_names=["jawab", "baca", "abaikan"]))
 
 	elif algorithm == "DT":
 		print "-- Decision Tree --"
-		print confusion_matrix(Y,result_DT_label, labels=["jawab", "baca", "hitung", "abaikan"])
+		print confusion_matrix(Y,result_DT_label, labels=["jawab", "baca", "abaikan"])
 		print sum_DT_acc/num_folds
+		print (classification_report(Y, result_DT_label, target_names=["jawab", "baca", "abaikan"]))
 
 	elif algorithm == "SVM":
 		print "-- Support Vector Machine --"
-		print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "hitung", "abaikan"])
+		print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
 		print sum_SVM_acc/num_folds
+		print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
 
 	else :
 		 	print " Algorithm not Found"
@@ -182,16 +208,16 @@ for index in range(len(list_of_data)):
 			label = list_of_data[index][3]
 
 			processed_comment = pre_process(comment)
-			# processed_comment = nltk.word_tokenize(comment)
-			# print feature_extraction(nltk.word_tokenize(processed_comment))
 			bag_of_feature += feature_extraction(nltk.word_tokenize(processed_comment))
-			# list_of_feature.append(feature_extraction(processed_comment))
 			list_of_label.append(label)
 			list_of_comment.append(processed_comment)
 
-show_feature_info(bag_of_feature)
-print len(list_of_label)
+print "Jumlah data awal :", len(list_of_data)
+print "Jumlah data model :", len(list_of_label)
+data_distribution(list_of_label)
 
-cross_fold_validation(10, 980, list_of_comment, list_of_label, "SVM")
-cross_fold_validation(10, 980, list_of_comment, list_of_label, "DT")
-cross_fold_validation(10, 980, list_of_comment, list_of_label, "NB")
+show_feature_info(bag_of_feature)
+
+cross_fold_validation(10, list_of_comment, list_of_label, "NB")
+# cross_fold_validation(10, list_of_comment, list_of_label, "DT")
+# cross_fold_validation(10, list_of_comment, list_of_label, "SVM")
