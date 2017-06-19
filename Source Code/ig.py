@@ -31,7 +31,7 @@ number = 1
 
 with open('../Resource/data.csv', 'w') as csvfile:
     fieldnames = ['no','id', 'content','main post','poster post']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=";")
     writer.writeheader()
 
     for count in range(40):
