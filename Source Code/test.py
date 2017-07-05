@@ -15,6 +15,7 @@ from sklearn import metrics
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
+from sklearn.feature_selection import VarianceThreshold
 
 def pre_process(text):
 	#turn emoticon to unicode
@@ -102,7 +103,6 @@ def data_distribution(list_of_label):
 
 #algorthm --> NB for naive bayes, DT for decision tree, SVM for support vector machie
 def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algorithm):
-	cv = CountVectorizer()
 	num_folds = number_of_fold
 	size = len(list_of_label)
 	subset_size = size/num_folds
@@ -112,6 +112,12 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 	result_NB_label = []
 	result_DT_label = []
 	result_SVM_label = []
+
+	cv = CountVectorizer()
+
+	# sel = VarianceThreshold(threshold=(.98 * (1 - .98)))
+	# X1 = cv.fit_transform(list_of_comment)
+	# X = sel.fit_transform(X1).toarray()
 
 	X = cv.fit_transform(list_of_comment).toarray()
 	Y = np.array(list_of_label)
@@ -218,6 +224,6 @@ data_distribution(list_of_label)
 
 show_feature_info(bag_of_feature)
 
-cross_fold_validation(10, list_of_comment, list_of_label, "NB")
+# cross_fold_validation(10, list_of_comment, list_of_label, "NB")
 # cross_fold_validation(10, list_of_comment, list_of_label, "DT")
-# cross_fold_validation(10, list_of_comment, list_of_label, "SVM")
+cross_fold_validation(10, list_of_comment, list_of_label, "SVM")
