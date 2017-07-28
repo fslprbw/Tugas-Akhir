@@ -11,6 +11,7 @@ from collections import Counter
 from nltk.util import ngrams
 from math import log10
 from decimal import *
+from subprocess import Popen, PIPE, STDOUT
 
 
 def read_csv(file_directory):
@@ -64,26 +65,27 @@ def get_unique_value (list):
 	return unique_value
 
 
-def information_gain(label_data, frequency):
-	total_sentence = label_data[0] + label_data[1] + label_data[2]
-	frequency_class_a = float(label_data[0]) / float(total_sentence)
-	frequency_class_b = float(label_data[1]) / float(total_sentence)
-	frequency_class_c = float(label_data[2]) / float(total_sentence)
-	prob_appear_class_a = float(frequency[0]) / float(total_sentence)
-	prob_appear_class_b = float(frequency[1]) / float(total_sentence)
-	prob_appear_class_c = float(frequency[2]) / float(total_sentence)
-	prob_total_appear = prob_appear_class_a +prob_appear_class_b + prob_appear_class_c
-	prob_unappear_class_a = float(label_data[0] - frequency[0]) / float(total_sentence)
-	prob_unappear_class_b = float(label_data[1] - frequency[1]) / float(total_sentence)
-	prob_unappear_class_c = float(label_data[2] - frequency[2]) / float(total_sentence)
-	prob_total_unappear = prob_unappear_class_a + prob_unappear_class_b + prob_unappear_class_c
+# def information_gain(label_data, frequency):
+# 	total_sentence = label_data[0] + label_data[1] + label_data[2]
+# 	frequency_class_a = float(label_data[0]) / float(total_sentence)
+# 	frequency_class_b = float(label_data[1]) / float(total_sentence)
+# 	frequency_class_c = float(label_data[2]) / float(total_sentence)
+# 	prob_appear_class_a = float(frequency[0]) / float(total_sentence)
+# 	prob_appear_class_b = float(frequency[1]) / float(total_sentence)
+# 	prob_appear_class_c = float(frequency[2]) / float(total_sentence)
+# 	prob_total_appear = prob_appear_class_a +prob_appear_class_b + prob_appear_class_c
+# 	prob_unappear_class_a = float(label_data[0] - frequency[0]) / float(total_sentence)
+# 	prob_unappear_class_b = float(label_data[1] - frequency[1]) / float(total_sentence)
+# 	prob_unappear_class_c = float(label_data[2] - frequency[2]) / float(total_sentence)
+# 	prob_total_unappear = prob_unappear_class_a + prob_unappear_class_b + prob_unappear_class_c
 
 
-	part1 = (frequency_class_a*log10(frequency_class_a) + frequency_class_b*log10(frequency_class_b) + frequency_class_c*log10(frequency_class_c)) 
-	# part2 = prob_total_appear * (prob_appear_class_a * log10(prob_appear_class_a) + prob_appear_class_b * log10(prob_appear_class_b) + prob_appear_class_c * log10(prob_appear_class_c))
-	# part3 = prob_total_unappear * (prob_unappear_class_a * log10(prob_unappear_class_a) + prob_unappear_class_b * log10(prob_unappear_class_b) + prob_unappear_class_c * log10(prob_unappear_class_c))
+# 	part1 = (frequency_class_a*log10(frequency_class_a) + frequency_class_b*log10(frequency_class_b) + frequency_class_c*log10(frequency_class_c)) 
+# 	# part2 = prob_total_appear * (prob_appear_class_a * log10(prob_appear_class_a) + prob_appear_class_b * log10(prob_appear_class_b) + prob_appear_class_c * log10(prob_appear_class_c))
+# 	# part3 = prob_total_unappear * (prob_unappear_class_a * log10(prob_unappear_class_a) + prob_unappear_class_b * log10(prob_unappear_class_b) + prob_unappear_class_c * log10(prob_unappear_class_c))
 
-	return log10(frequency[0])
+# 	return log10(frequency[0])
+
 
 list_of_data = []
 # list_of_feature = []
@@ -174,7 +176,23 @@ label_distribution = [jawab, baca, abaikan]
 # print label_distribution
 # print fitur_frequency
 
-print information_gain(label_distribution, fitur_frequency[0])
+p = Popen(['java', '-jar', 'INLPPreproses.jar', 'formalization', "Aku yg seorang kapiten punya pedang bs jugaaaaa"], stdout=PIPE, stderr=STDOUT)
+result = ""
+for line in p.stdout:
+	print line
+	arr_token = line.decode("ascii", "replace").split(" ")    
+	for token in arr_token:
+		if token not in result and token != '_url_' and len(token) > 0:
+			result += token + " "
+
+text = result
+
+# text = unicode(text, 'utf-8')
+# text = text.encode('unicode_escape')
+# #convert emoticon
+# text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
+
+print text
 
 # print("Pairs\n" + str(zip(wordlist, wordfreq)))
 
