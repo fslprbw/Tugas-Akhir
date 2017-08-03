@@ -20,7 +20,6 @@ from sklearn.svm import SVC
 from sklearn.feature_selection import VarianceThreshold
 from subprocess import Popen, PIPE, STDOUT
 from sklearn.feature_selection import VarianceThreshold
-from gensim.models import word2vec
 
 def pre_process(text):
 	#turn emoticon to unicode
@@ -46,10 +45,10 @@ def pre_process(text):
 	text = re.sub('[\s]+', ' ', text)
 	#Convert to lower case
 	text = ''.join(text).lower()
-	# # formalization
-	# text = formalization(text)
-	# #remove stopword
-	# text = remove_stopword(text)
+	# formalization
+	text = formalization(text)
+	#remove stopword
+	text = remove_stopword(text)
 	return text
 
 def formalization (text):
@@ -180,16 +179,10 @@ def feature_selection (X,Y, number_of_feature):
 
 	return new_X
 
-def get_average(feature_vector):
-	size = len(feature_vector)
-	total = 0
-	average = 0
-	for index in range(size):
-		total += feature_vector[index]
-	average = total/size
-	return average
 
-def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_vector ,fitur):
+
+#algorthm --> NB for naive bayes, DT for decision tree, SVM for support vector machie
+def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algorithm,fitur):
 	num_folds = number_of_fold
 	size = len(list_of_label)
 	subset_size = size/num_folds
@@ -206,19 +199,8 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 	# X1 = cv.fit_transform(list_of_comment)
 	# X = sel.fit_transform(X1).toarray()
 
-	Xtemp = cv.fit_transform(list_of_comment).toarray()
-	X = Xtemp
+	X = cv.fit_transform(list_of_comment).toarray()
 	Y = np.array(list_of_label)
-
-	for sentence_index in range(len(Xtemp)):
-		for word_index in range(len(Xtemp[sentence_index])):
-			if (Xtemp[sentence_index][word_index] == 1):
-				word = cv.get_feature_names()[word_index] 
-				if word in word_vector[0]:
-					X[sentence_index][word_index] = word_vector[1][word_vector[0].index(word)]
-				else:
-					X[sentence_index][word_index] = 0
-					print word
 
 	# X = feature_selection(X,Y, fitur)
 
@@ -249,23 +231,52 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 					train_comment_round = np.concatenate((train_comment_round,X[train_start:train_finish]))
 					train_label_round = np.concatenate((train_label_round,Y[train_start:train_finish]))
 
-		clf = SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
-	    decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
-	    max_iter=-1, probability=False, random_state=None, shrinking=True,
-	    tol=0.001, verbose=False)
-		clf.fit(train_comment_round, train_label_round)
-		result_SVM_label = np.concatenate((result_SVM_label,clf.predict(test_comment_round)))			
-		sum_SVM_acc += metrics.accuracy_score(test_label_round, clf.predict(test_comment_round))
-	
+		if algorithm == "NB":
+			clf = GaussianNB()
+			GaussianNB(priors=None)
+			clf.fit(train_comment_round, train_label_round)
+			result_NB_label = np.concatenate((result_NB_label,clf.predict(test_comment_round)))
+			sum_NB_acc += metrics.accuracy_score(test_label_round, clf.predict(test_comment_round))
 
-	print "-- Support Vector Machine --"
-	print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
-	print sum_SVM_acc/num_folds
-	print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
+		elif algorithm == "DT":
 
+			clf = DecisionTreeClassifier()
+			clf.fit(train_comment_round, train_label_round)
+			result_DT_label = np.concatenate((result_DT_label,clf.predict(test_comment_round)))
+			sum_DT_acc += metrics.accuracy_score(test_label_round, clf.predict(test_comment_round))
 
+		elif algorithm == "SVM":
 
+			clf = SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+		    decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
+		    max_iter=-1, probability=False, random_state=None, shrinking=True,
+		    tol=0.001, verbose=False)
+			clf.fit(train_comment_round, train_label_round)
+			result_SVM_label = np.concatenate((result_SVM_label,clf.predict(test_comment_round)))			
+			sum_SVM_acc += metrics.accuracy_score(test_label_round, clf.predict(test_comment_round))
+		
+	if algorithm == "NB":
+		print "-- Naive Bayes --"
+		print confusion_matrix(Y,result_NB_label, labels=["jawab", "baca", "abaikan"])
+		print sum_NB_acc/num_folds
+		print (classification_report(Y, result_NB_label, target_names=["jawab", "baca", "abaikan"]))
 
+	elif algorithm == "DT":
+		print "-- Decision Tree --"
+		print confusion_matrix(Y,result_DT_label, labels=["jawab", "baca", "abaikan"])
+		print sum_DT_acc/num_folds
+		print (classification_report(Y, result_DT_label, target_names=["jawab", "baca", "abaikan"]))
+
+	elif algorithm == "SVM":
+		print "-- Support Vector Machine --"
+		print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
+		print sum_SVM_acc/num_folds
+		print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
+
+	else :
+		 	print " Algorithm not Found"
+
+start = time.time()
 
 list_of_data = []
 # list_of_feature = []
@@ -290,26 +301,19 @@ for index in range(len(list_of_data)):
 			list_of_label.append(label)
 			list_of_comment.append(processed_comment)
 
-start = time.time()
+print "Jumlah data awal :", len(list_of_data)
+print "Jumlah data model :", len(list_of_label)
+data_distribution(list_of_label)
 
-sentences = []
-
-for index in range(len(list_of_comment)):
-	sentences.append(nltk.word_tokenize(list_of_comment[index]))
- 
-model = word2vec.Word2Vec(sentences, min_count=1, size=300,window=11, negative=5, iter=15, sg=1)
-
-# print model.similarity("barakallah","beli")
-
-# for index in range(len(model.wv.vocab)):
-list_of_vector = []
-list_of_word = []
-for key in model.wv.vocab:
-	list_of_vector.append(get_average(model[key]))
-	list_of_word.append(key)
-
-word_vector = (list_of_word, list_of_vector)
-
-cross_fold_validation(10, list_of_comment, list_of_label, word_vector, 3604)
+show_feature_info(bag_of_feature)
+cross_fold_validation(10, list_of_comment, list_of_label, "NB", 3604)
+# cross_fold_validation(10, list_of_comment, list_of_label, "DT")
+# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 3500)
+# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 3000)
+# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 2500)
+# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 2000)
+# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 1500)
+# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 1000)
+# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 500)
 end = time.time()
 print end-start
