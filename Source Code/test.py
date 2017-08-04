@@ -209,6 +209,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 	Xtemp = cv.fit_transform(list_of_comment).toarray()
 	X = Xtemp
 	Y = np.array(list_of_label)
+	word_unknowrn = 0
 
 	for sentence_index in range(len(Xtemp)):
 		for word_index in range(len(Xtemp[sentence_index])):
@@ -218,7 +219,9 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 					X[sentence_index][word_index] = word_vector[1][word_vector[0].index(word)]
 				else:
 					X[sentence_index][word_index] = 0
-					print word
+					word_unknowrn += 1
+
+	print "Kata tak dikenal = ", word_unknowrn
 
 	# X = feature_selection(X,Y, fitur)
 
@@ -259,9 +262,9 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 	
 
 	print "-- Support Vector Machine --"
-	print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
+	# print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
 	print sum_SVM_acc/num_folds
-	print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
+	# print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
 
 
 
@@ -275,6 +278,13 @@ processed_data = []
 bag_of_feature  = []
 
 list_of_data = read_csv('../Resource/all_labeled.csv')
+list_of_additional_data = read_csv('../Resource/addition.csv')
+
+print len(list_of_data)
+
+total_data = list_of_data + list_of_additional_data
+
+print len(total_data)
 
 for index in range(len(list_of_data)):
 	poster_status = list_of_data[index][2]
@@ -294,10 +304,10 @@ start = time.time()
 
 sentences = []
 
-for index in range(len(list_of_comment)):
-	sentences.append(nltk.word_tokenize(list_of_comment[index]))
+for index in range(len(total_data)):
+	sentences.append(nltk.word_tokenize(pre_process(total_data[index][1])))
  
-model = word2vec.Word2Vec(sentences, min_count=1, size=300,window=11, negative=5, iter=15, sg=1)
+model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=15, negative=30, iter=5, sg=1)
 
 # print model.similarity("barakallah","beli")
 
@@ -305,10 +315,119 @@ model = word2vec.Word2Vec(sentences, min_count=1, size=300,window=11, negative=5
 list_of_vector = []
 list_of_word = []
 for key in model.wv.vocab:
+	# if key == "saya":
+	# 	print model[key]	
+	# 	print get_average(model[key])
 	list_of_vector.append(get_average(model[key]))
 	list_of_word.append(key)
 
 word_vector = (list_of_word, list_of_vector)
+print "Vocab Size = ", len(word_vector[0])
+
+cross_fold_validation(10, list_of_comment, list_of_label, word_vector, 3604)
+end = time.time()
+print end-start
+
+model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=15, negative=30, iter=10, sg=1)
+
+# print model.similarity("barakallah","beli")
+
+# for index in range(len(model.wv.vocab)):
+list_of_vector = []
+list_of_word = []
+for key in model.wv.vocab:
+	# if key == "saya":
+	# 	print model[key]	
+	# 	print get_average(model[key])
+	list_of_vector.append(get_average(model[key]))
+	list_of_word.append(key)
+
+word_vector = (list_of_word, list_of_vector)
+print "Vocab Size = ", len(word_vector[0])
+
+cross_fold_validation(10, list_of_comment, list_of_label, word_vector, 3604)
+end = time.time()
+print end-start
+
+model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=15, negative=30, iter=15, sg=1)
+
+# print model.similarity("barakallah","beli")
+
+# for index in range(len(model.wv.vocab)):
+list_of_vector = []
+list_of_word = []
+for key in model.wv.vocab:
+	# if key == "saya":
+	# 	print model[key]	
+	# 	print get_average(model[key])
+	list_of_vector.append(get_average(model[key]))
+	list_of_word.append(key)
+
+word_vector = (list_of_word, list_of_vector)
+print "Vocab Size = ", len(word_vector[0])
+
+cross_fold_validation(10, list_of_comment, list_of_label, word_vector, 3604)
+end = time.time()
+print end-start
+
+model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=15, negative=30, iter=20, sg=1)
+
+# print model.similarity("barakallah","beli")
+
+# for index in range(len(model.wv.vocab)):
+list_of_vector = []
+list_of_word = []
+for key in model.wv.vocab:
+	# if key == "saya":
+	# 	print model[key]	
+	# 	print get_average(model[key])
+	list_of_vector.append(get_average(model[key]))
+	list_of_word.append(key)
+
+word_vector = (list_of_word, list_of_vector)
+print "Vocab Size = ", len(word_vector[0])
+
+cross_fold_validation(10, list_of_comment, list_of_label, word_vector, 3604)
+end = time.time()
+print end-start
+
+model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=15, negative=30, iter=25, sg=1)
+
+# print model.similarity("barakallah","beli")
+
+# for index in range(len(model.wv.vocab)):
+list_of_vector = []
+list_of_word = []
+for key in model.wv.vocab:
+	# if key == "saya":
+	# 	print model[key]	
+	# 	print get_average(model[key])
+	list_of_vector.append(get_average(model[key]))
+	list_of_word.append(key)
+
+word_vector = (list_of_word, list_of_vector)
+print "Vocab Size = ", len(word_vector[0])
+
+cross_fold_validation(10, list_of_comment, list_of_label, word_vector, 3604)
+end = time.time()
+print end-start
+
+model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=15, negative=30, iter=30, sg=1)
+
+# print model.similarity("barakallah","beli")
+
+# for index in range(len(model.wv.vocab)):
+list_of_vector = []
+list_of_word = []
+for key in model.wv.vocab:
+	# if key == "saya":
+	# 	print model[key]	
+	# 	print get_average(model[key])
+	list_of_vector.append(get_average(model[key]))
+	list_of_word.append(key)
+
+word_vector = (list_of_word, list_of_vector)
+print "Vocab Size = ", len(word_vector[0])
 
 cross_fold_validation(10, list_of_comment, list_of_label, word_vector, 3604)
 end = time.time()

@@ -29,37 +29,40 @@ requests_session.mount('file://', LocalFileAdapter())
 
 number = 1
 
-with open('../Resource/data.csv', 'w') as csvfile:
-    fieldnames = ['no','id', 'content','main post','poster post']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=";")
+with open('../Resource/addition.csv', 'w') as csvfile:
+    fieldnames = ['no','id', 'content','main post','poster post','label']
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=",")
     writer.writeheader()
 
-    for count in range(40):
+    for count in range(10):
         print("test",count)
         akun = []
         konten = []
 
-        filename = 'file'
+        filename = 'addition'
+        count += 1
         filename += `count`
 
         page = requests_session.get('file://../File HTML/' + filename+'.html')
         tree = html.fromstring(page.content)
 
-        for post in tree.xpath('//a[@class="_4zhc5 notranslate _iqaka"]/text()'):
+        # for post in tree.xpath('//a[@class="_4zhc5 notranslate _iqaka"]/text()'):
+        for post in tree.xpath('//a[@class="_4zhc5 notranslate _24641"]/text()'):
             akun.append(post)
 
 
-        for results in tree.xpath('.//ul[@class="_mo9iw _123ym"]/li'):
+        # for results in tree.xpath('.//ul[@class="_mo9iw _123ym"]/li'):
+        for results in tree.xpath('.//ul[@class="_h3rdq"]/li'):
             konten.append(results.text_content().encode('utf-8'))
 
         for index in range(len(akun)):
             if index == 0:
-                writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'yes' , 'poster post':'yes'})
+                writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'yes' , 'poster post':'yes', 'label':'x'})
                 poster = akun[index]
             else:
                 if akun[index] == poster:
-                    writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'no', 'poster post':'yes'})
+                    writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'no', 'poster post':'yes', 'label':'x'})
                 else:
-                    writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'no', 'poster post':'no'})
+                    writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'no', 'poster post':'no', 'label':'x'})
             number += 1
         
