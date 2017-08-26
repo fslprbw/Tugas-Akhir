@@ -45,10 +45,10 @@ def pre_process(text):
 	text = re.sub('[\s]+', ' ', text)
 	#Convert to lower case
 	text = ''.join(text).lower()
-	# formalization
-	text = formalization(text)
-	#remove stopword
-	text = remove_stopword(text)
+	# # formalization
+	# text = formalization(text)
+	# #remove stopword
+	# text = remove_stopword(text)
 	return text
 
 def formalization (text):
@@ -170,6 +170,7 @@ def feature_selection (X,Y, number_of_feature):
 	new_X = X
 
 	Z = information_gain(X,Y)
+	print "Jumlah Kata = ", len(Z)
 	Z2 = sorted(Z, reverse=True)
 
 	for index in range(len(Z)):
@@ -179,7 +180,10 @@ def feature_selection (X,Y, number_of_feature):
 
 	return new_X
 
-
+def print_wrong_class (comment, assigned_label, result_label):
+	for index in range(len(assigned_label)):
+		if assigned_label[index] != result_label[index]:
+			print comment[index]
 
 #algorthm --> NB for naive bayes, DT for decision tree, SVM for support vector machie
 def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algorithm,fitur):
@@ -202,7 +206,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 	X = cv.fit_transform(list_of_comment).toarray()
 	Y = np.array(list_of_label)
 
-	# X = feature_selection(X,Y, fitur)
+	X = feature_selection(X,Y, fitur)
 
 	for index in range(10):
 		if index < size % num_folds:
@@ -272,9 +276,51 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 		print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
 		print sum_SVM_acc/num_folds
 		print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
+		# print_wrong_class(list_of_comment, Y, result_SVM_label)
 
 	else :
 		 	print " Algorithm not Found"
+
+def inlppreproses (list_of_comment):
+	list_of_processed_comment = []
+	index_start = 0
+	index_finish = 0
+	packet = 1000
+	div_value = len(list_of_comment)//packet
+	mod_value = len(list_of_comment)%packet
+
+	for repeat in range(div_value+1):
+		inlp_input = ""
+		inlp_output = ""
+
+		if (repeat < div_value):
+			for index in range(packet):
+				inlp_input += list_of_comment[repeat*packet + index]
+				inlp_input += "`"
+
+			inlp_output = formalization(inlp_input)
+			# inlp_output = remove_stopword(inlp_output)
+
+			for index in range(len(inlp_output)):
+				if (inlp_output[index] == "`"):
+					index_finish = index
+					list_of_processed_comment.append(inlp_output[index_start:index_finish])
+					index_start = index + 1
+		else:
+			for index in range(mod_value):
+				inlp_input += list_of_comment[repeat*packet + index]
+				inlp_input += "`"
+
+			inlp_output = formalization(inlp_input)
+			# inlp_output = remove_stopword(inlp_output)
+
+			for index in range(len(inlp_output)):
+				if (inlp_output[index] == "`"):
+					index_finish = index
+					list_of_processed_comment.append(inlp_output[index_start:index_finish])
+					index_start = index + 1
+
+	return list_of_processed_comment
 
 start = time.time()
 
@@ -301,12 +347,14 @@ for index in range(len(list_of_data)):
 			list_of_label.append(label)
 			list_of_comment.append(processed_comment)
 
+list_of_comment = inlppreproses(list_of_comment)
+
 print "Jumlah data awal :", len(list_of_data)
 print "Jumlah data model :", len(list_of_label)
 data_distribution(list_of_label)
 
 show_feature_info(bag_of_feature)
-cross_fold_validation(10, list_of_comment, list_of_label, "NB", 3604)
+cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 400)
 # cross_fold_validation(10, list_of_comment, list_of_label, "DT")
 # cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 3500)
 # cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 3000)

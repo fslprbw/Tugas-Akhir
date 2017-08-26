@@ -28,32 +28,41 @@ requests_session = requests.session()
 requests_session.mount('file://', LocalFileAdapter())
 
 number = 1
+konst = 0
+total_data = 0
 
-with open('../Resource/addition.csv', 'w') as csvfile:
+with open('../Resource/addition1.csv', 'w') as csvfile:
     fieldnames = ['no','id', 'content','main post','poster post','label']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=",")
     writer.writeheader()
 
-    for count in range(10):
+    for count in range(20):
         print("test",count)
         akun = []
         konten = []
 
         filename = 'addition'
-        count += 1
+        count = count + konst + 1
         filename += `count`
+
+        print filename
 
         page = requests_session.get('file://../File HTML/' + filename+'.html')
         tree = html.fromstring(page.content)
 
         # for post in tree.xpath('//a[@class="_4zhc5 notranslate _iqaka"]/text()'):
         for post in tree.xpath('//a[@class="_4zhc5 notranslate _24641"]/text()'):
+        # for post in tree.xpath('//a[@class="_2g7d5 notranslate _95hvo"]/text()'):
             akun.append(post)
 
 
         # for results in tree.xpath('.//ul[@class="_mo9iw _123ym"]/li'):
         for results in tree.xpath('.//ul[@class="_h3rdq"]/li'):
+        # for results in tree.xpath('.//ul[@class="_b0tqa"]/li'):
             konten.append(results.text_content().encode('utf-8'))
+
+        print "Jumlah Komentar = ", len(akun)
+        total_data += len(akun)
 
         for index in range(len(akun)):
             if index == 0:
@@ -65,4 +74,5 @@ with open('../Resource/addition.csv', 'w') as csvfile:
                 else:
                     writer.writerow({'no':number, 'id':akun[index], 'content':konten[index][len(akun[index]):],'main post':'no', 'poster post':'no', 'label':'x'})
             number += 1
-        
+
+print "Total data = ", total_data
