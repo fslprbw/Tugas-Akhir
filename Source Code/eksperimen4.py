@@ -330,8 +330,8 @@ def inlppreproses (list_of_comment):
 
 	return list_of_processed_comment
 
-def printToCSV (data_list):
-	with open('../Resource/word_list.csv', 'w') as csvfile:
+def printToCSV (data_list, filename):
+	with open('../Resource/'+filename+'.csv', 'w') as csvfile:
 	    fieldnames = ['no', 'word']
 	    writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=",")
 	    writer.writeheader()
@@ -387,31 +387,33 @@ we_comment = inlppreproses(we_comment)
 
 total_comment = experiment_comment + we_comment
 
-for repeat in range(1):
+printToCSV(total_comment, "list_of_comment")
 
-	start = time.time()
+# for repeat in range(1):
 
-	sentences = []
+# 	start = time.time()
 
-	for index in range(len(total_comment)):
-		sentences.append(nltk.word_tokenize(total_comment[index]))
+# 	sentences = []
+
+# 	for index in range(len(total_comment)):
+# 		sentences.append(nltk.word_tokenize(total_comment[index]))
 	 
-	model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
-	print model.similar_by_word("senang")
+# 	model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
+# 	print model.similar_by_word("senang")
 
-	# for index in range(len(model.wv.vocab)):
-	list_of_vector = []
-	list_of_word = []
-	for key in model.wv.vocab:
-		list_of_word.append(key)
-		list_of_vector.append(model[key])
+# 	# for index in range(len(model.wv.vocab)):
+# 	list_of_vector = []
+# 	list_of_word = []
+# 	for key in model.wv.vocab:
+# 		list_of_word.append(key)
+# 		list_of_vector.append(model[key])
 		
 
-	word_vector = (list_of_word, list_of_vector)
-	print "Vocab Size = ", len(word_vector[0])
+# 	word_vector = (list_of_word, list_of_vector)
+# 	print "Vocab Size = ", len(word_vector[0])
 
-	# printToCSV(list_of_word)
+# 	# printToCSV(list_of_word, "list_of_word")
 
-	# cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 2949)
-	end = time.time()
-	print end-start
+# 	# cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 2949)
+# 	end = time.time()
+# 	print end-start

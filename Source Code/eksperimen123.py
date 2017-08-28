@@ -27,21 +27,21 @@ def pre_process(text):
 	text = text.encode('unicode_escape')
 	#convert unicode of newline to newline
 	text = re.sub(r'\\n',' ',text)
-	# # Convert www.* or https?://* to URL
-	# text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
-	# #Replace #word with word
-	# text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
-	#Convert @username to AT_USER
+	# Convert www.* or https?://* to URL
+	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
+	#Replace #word with word
+	text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
+	Convert @username to AT_USER
 	text = re.sub('@'+poster,' _mentionpemilik_ ',text)
 	text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
-	# #Convert mark
-	# text = re.sub('[,]+', ' ', text)
-	# text = re.sub('[.]+', ' _tanda_titik_ ', text)
-	# text = re.sub('[?]+', ' _tanda_tanya_ ', text)
-	# text = re.sub('[!]+', ' _tanda_seru_ ', text)
-	# #convert emoticon and symbol
-	# text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
-	# Remove additional white spaces
+	#Convert mark
+	text = re.sub('[,]+', ' ', text)
+	text = re.sub('[.]+', ' _tanda_titik_ ', text)
+	text = re.sub('[?]+', ' _tanda_tanya_ ', text)
+	text = re.sub('[!]+', ' _tanda_seru_ ', text)
+	#convert emoticon and symbol
+	text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
+	Remove additional white spaces
 	text = re.sub('[\s]+', ' ', text)
 	#Convert to lower case
 	text = ''.join(text).lower()
