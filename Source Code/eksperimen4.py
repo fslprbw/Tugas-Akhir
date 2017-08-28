@@ -27,6 +27,8 @@ def pre_process(text):
 	text = text.encode('unicode_escape')
 	#convert unicode of newline to newline
 	text = re.sub(r'\\n',' ',text)
+	text = re.sub('[/]+', ' atau ', text)
+	text = re.sub('[&]+', ' dan ', text)
 	# Convert www.* or https?://* to URL
 	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
 	#Replace #word with word
@@ -168,13 +170,17 @@ def information_gain(X, y):
 
 def feature_selection (X,Y, number_of_feature):
 	new_X = X
+	max_feature_idx = number_of_feature-1
 
 	Z = information_gain(X,Y)
-	print "Jumlah Kata = ", len(Z)
 	Z2 = sorted(Z, reverse=True)
 
+	if (max_feature_idx >= len(Z2)):
+		max_feature_idx = len(Z2)-1
+		print "Nilai seleksi fitur melebihi jumlah feature", max_feature_idx, ":", len(Z2)
+
 	for index in range(len(Z)):
-		if (Z[index] <= Z2[number_of_feature]):
+		if (Z[index] <= Z2[max_feature_idx]):
 			for a in range(len(X)):
 				new_X[a][index] = 0
 
@@ -200,7 +206,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 	result_DT_label = []
 	result_SVM_label = []
 
-	cv = CountVectorizer()
+	cv = CountVectorizer(input='content', binary=True, tokenizer=lambda text:nltk.word_tokenize(text))
 
 	Xtemp = cv.fit_transform(list_of_comment).toarray()
 	X = []
@@ -365,9 +371,8 @@ for index in range(len(experiment_data)):
 			label = experiment_data[index][3]
 
 			processed_comment = pre_process(comment)
-			bag_of_feature += feature_extraction(nltk.word_tokenize(processed_comment))
-			list_of_label.append(label)
 			experiment_comment.append(processed_comment)
+			list_of_label.append(label)
 
 experiment_comment = inlppreproses(experiment_comment)
 
@@ -380,40 +385,43 @@ for index in range(len(we_data)):
 			comment = we_data[index][1]
 
 			processed_comment = pre_process(comment)
-			bag_of_feature += feature_extraction(nltk.word_tokenize(processed_comment))
 			we_comment.append(processed_comment)
 
 we_comment = inlppreproses(we_comment)
 
 total_comment = experiment_comment + we_comment
 
-printToCSV(total_comment, "list_of_comment")
+# printToCSV(total_comment, "list_of_comment")
 
-# for repeat in range(1):
+for repeat in range(1):
 
-# 	start = time.time()
+	start = time.time()
 
-# 	sentences = []
+	sentences = []
 
-# 	for index in range(len(total_comment)):
-# 		sentences.append(nltk.word_tokenize(total_comment[index]))
+	for index in range(len(total_comment)):
+		sentences.append(nltk.word_tokenize(total_comment[index]))
+
+	for sentence in sentences:
+		if ("Cuma" in sentence):
+			print sentence
 	 
-# 	model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
-# 	print model.similar_by_word("senang")
+	model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
+	# print model.similar_by_word("cuma")
 
-# 	# for index in range(len(model.wv.vocab)):
-# 	list_of_vector = []
-# 	list_of_word = []
-# 	for key in model.wv.vocab:
-# 		list_of_word.append(key)
-# 		list_of_vector.append(model[key])
+	# for index in range(len(model.wv.vocab)):
+	list_of_vector = []
+	list_of_word = []
+	for key in model.wv.vocab:
+		list_of_word.append(key)
+		list_of_vector.append(model[key])
 		
 
-# 	word_vector = (list_of_word, list_of_vector)
-# 	print "Vocab Size = ", len(word_vector[0])
+	word_vector = (list_of_word, list_of_vector)
+	print "Vocab Size = ", len(word_vector[0])
 
-# 	# printToCSV(list_of_word, "list_of_word")
+	printToCSV(list_of_word, "list_of_word_test")
 
-# 	# cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 2949)
-# 	end = time.time()
-# 	print end-start
+	cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 3002)
+	end = time.time()
+	print end-start

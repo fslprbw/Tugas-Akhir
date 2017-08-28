@@ -31,7 +31,7 @@ def pre_process(text):
 	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
 	#Replace #word with word
 	text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
-	Convert @username to AT_USER
+	# Convert @username to AT_USER
 	text = re.sub('@'+poster,' _mentionpemilik_ ',text)
 	text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
 	#Convert mark
@@ -41,7 +41,7 @@ def pre_process(text):
 	text = re.sub('[!]+', ' _tanda_seru_ ', text)
 	#convert emoticon and symbol
 	text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
-	Remove additional white spaces
+	# Remove additional white spaces
 	text = re.sub('[\s]+', ' ', text)
 	#Convert to lower case
 	text = ''.join(text).lower()
@@ -203,7 +203,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 	result_SVM_label = []
 	kata = []
 
-	cv = CountVectorizer()
+	cv = CountVectorizer(input='content', binary=True, tokenizer=lambda text:nltk.word_tokenize(text))
 
 	X = cv.fit_transform(list_of_comment).toarray()
 	Y = np.array(list_of_label)
