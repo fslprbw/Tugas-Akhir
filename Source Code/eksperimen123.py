@@ -27,28 +27,24 @@ def pre_process(text):
 	text = text.encode('unicode_escape')
 	#convert unicode of newline to newline
 	text = re.sub(r'\\n',' ',text)
-	# Convert www.* or https?://* to URL
-	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
-	#Replace #word with word
-	text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
+	# # Convert www.* or https?://* to URL
+	# text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
+	# #Replace #word with word
+	# text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
 	#Convert @username to AT_USER
 	text = re.sub('@'+poster,' _mentionpemilik_ ',text)
 	text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
-	#Convert mark
-	text = re.sub('[,]+', ' ', text)
-	text = re.sub('[.]+', ' _tanda_titik_ ', text)
-	text = re.sub('[?]+', ' _tanda_tanya_ ', text)
-	text = re.sub('[!]+', ' _tanda_seru_ ', text)
-	#convert emoticon and symbol
-	text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
+	# #Convert mark
+	# text = re.sub('[,]+', ' ', text)
+	# text = re.sub('[.]+', ' _tanda_titik_ ', text)
+	# text = re.sub('[?]+', ' _tanda_tanya_ ', text)
+	# text = re.sub('[!]+', ' _tanda_seru_ ', text)
+	# #convert emoticon and symbol
+	# text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
 	# Remove additional white spaces
 	text = re.sub('[\s]+', ' ', text)
 	#Convert to lower case
 	text = ''.join(text).lower()
-	# # formalization
-	# text = formalization(text)
-	# #remove stopword
-	# text = remove_stopword(text)
 	return text
 
 def formalization (text):
@@ -185,6 +181,15 @@ def print_wrong_class (comment, assigned_label, result_label):
 		if assigned_label[index] != result_label[index]:
 			print comment[index]
 
+def printToCSV (data_list, filename):
+	with open('../Resource/'+filename+'.csv', 'w') as csvfile:
+	    fieldnames = ['no', 'word']
+	    writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=",")
+	    writer.writeheader()
+
+	    for index in range(len(data_list)):
+	    	writer.writerow({'no':index, 'word':data_list[index]})
+
 #algorthm --> NB for naive bayes, DT for decision tree, SVM for support vector machie
 def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algorithm,fitur):
 	num_folds = number_of_fold
@@ -196,17 +201,18 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 	result_NB_label = []
 	result_DT_label = []
 	result_SVM_label = []
+	kata = []
 
 	cv = CountVectorizer()
-
-	# sel = VarianceThreshold(threshold=(.98 * (1 - .98)))
-	# X1 = cv.fit_transform(list_of_comment)
-	# X = sel.fit_transform(X1).toarray()
 
 	X = cv.fit_transform(list_of_comment).toarray()
 	Y = np.array(list_of_label)
 
-	X = feature_selection(X,Y, fitur)
+	# X = feature_selection(X,Y, fitur)
+
+	print "Total Kata = ", len(X[0])
+
+	printToCSV(cv.get_feature_names(), "kata")
 
 	for index in range(10):
 		if index < size % num_folds:
@@ -264,22 +270,25 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 		print confusion_matrix(Y,result_NB_label, labels=["jawab", "baca", "abaikan"])
 		print sum_NB_acc/num_folds
 		print (classification_report(Y, result_NB_label, target_names=["jawab", "baca", "abaikan"]))
+		printToCSV(result_NB_label, "hasil_NB")
 
 	elif algorithm == "DT":
 		print "-- Decision Tree --"
 		print confusion_matrix(Y,result_DT_label, labels=["jawab", "baca", "abaikan"])
 		print sum_DT_acc/num_folds
 		print (classification_report(Y, result_DT_label, target_names=["jawab", "baca", "abaikan"]))
+		printToCSV(result_DT_label, "hasil_DT")
 
 	elif algorithm == "SVM":
 		print "-- Support Vector Machine --"
 		print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
 		print sum_SVM_acc/num_folds
 		print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
-		# print_wrong_class(list_of_comment, Y, result_SVM_label)
+		printToCSV(result_SVM_label, "hasil_SVM")
 
 	else :
 		 	print " Algorithm not Found"
+
 
 def inlppreproses (list_of_comment):
 	list_of_processed_comment = []
@@ -299,7 +308,7 @@ def inlppreproses (list_of_comment):
 				inlp_input += "`"
 
 			inlp_output = formalization(inlp_input)
-			# inlp_output = remove_stopword(inlp_output)
+			inlp_output = remove_stopword(inlp_output)
 
 			for index in range(len(inlp_output)):
 				if (inlp_output[index] == "`"):
@@ -312,7 +321,7 @@ def inlppreproses (list_of_comment):
 				inlp_input += "`"
 
 			inlp_output = formalization(inlp_input)
-			# inlp_output = remove_stopword(inlp_output)
+			inlp_output = remove_stopword(inlp_output)
 
 			for index in range(len(inlp_output)):
 				if (inlp_output[index] == "`"):
@@ -322,14 +331,11 @@ def inlppreproses (list_of_comment):
 
 	return list_of_processed_comment
 
-start = time.time()
-
 list_of_data = []
 # list_of_feature = []
 list_of_label = []
 list_of_comment = []
 processed_data = []
-bag_of_feature  = []
 
 list_of_data = read_csv('../Resource/all_labeled.csv')
 
@@ -343,25 +349,26 @@ for index in range(len(list_of_data)):
 			label = list_of_data[index][3]
 
 			processed_comment = pre_process(comment)
-			bag_of_feature += feature_extraction(nltk.word_tokenize(processed_comment))
 			list_of_label.append(label)
 			list_of_comment.append(processed_comment)
 
-list_of_comment = inlppreproses(list_of_comment)
+# list_of_comment = inlppreproses(list_of_comment)
 
 print "Jumlah data awal :", len(list_of_data)
 print "Jumlah data model :", len(list_of_label)
 data_distribution(list_of_label)
 
-show_feature_info(bag_of_feature)
-cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 400)
-# cross_fold_validation(10, list_of_comment, list_of_label, "DT")
-# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 3500)
-# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 3000)
-# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 2500)
-# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 2000)
-# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 1500)
-# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 1000)
-# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 500)
+start = time.time()
+cross_fold_validation(10, list_of_comment, list_of_label, "DT", 4294)
 end = time.time()
-print end-start
+print "Waktu = ", end-start
+
+start = time.time()
+cross_fold_validation(10, list_of_comment, list_of_label, "NB", 4294)
+end = time.time()
+print "Waktu = ", end-start
+
+start = time.time()
+cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 4294)
+end = time.time()
+print "Waktu = ", end-start

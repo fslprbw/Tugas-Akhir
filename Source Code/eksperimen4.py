@@ -6,6 +6,7 @@ import time
 import csv
 from py4j.java_gateway import JavaGateway
 import re
+import csv
 import numpy as np
 import scipy as scipy
 from nltk.util import ngrams
@@ -17,11 +18,8 @@ from sklearn import metrics
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
-from sklearn.feature_selection import VarianceThreshold
 from subprocess import Popen, PIPE, STDOUT
-from sklearn.feature_selection import VarianceThreshold
 from gensim.models import word2vec
-from scipy.sparse import csr_matrix
 
 def pre_process(text):
 	#turn emoticon to unicode
@@ -204,14 +202,12 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 
 	cv = CountVectorizer()
 
-	# sel = VarianceThreshold(threshold=(.98 * (1 - .98)))
-	# X1 = cv.fit_transform(list_of_comment)
-	# X = sel.fit_transform(X1).toarray()
-
 	Xtemp = cv.fit_transform(list_of_comment).toarray()
-	data_X = []
+	X = []
 	Y = np.array(list_of_label)
-	word_unknowrn = 0
+	unknown_word = []
+
+	Xtemp = feature_selection(Xtemp,Y, fitur)
 
 	for sentence_index in range(len(Xtemp)):
 		total_word = len(Xtemp[sentence_index])
@@ -226,8 +222,8 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 				if word in word_vector[0]:
 					for vector_index in range(vector_size):
 						sum_vector[vector_index] += word_vector[1][word_index][vector_index]
-				else:
-					word_unknowrn += 1
+				elif word not in unknown_word:
+					unknown_word.append(word)
 
 		for vector_index in range(vector_size):
 			if word_in_sentence != 0:
@@ -237,7 +233,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 			# 	print sum_vector[vector_index]
 			# 	print average_vector[vector_index]
 
-		data_X.append(average_vector)
+		X.append(average_vector)
 
 		# for word_index in range(len(Xtemp[sentence_index])):
 		# 	if (Xtemp[sentence_index][word_index] == 1):
@@ -248,11 +244,9 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 		# 			X[sentence_index][word_index] = 0
 		# 			word_unknowrn += 1
 
-	print "Kata tak dikenal = ", word_unknowrn
-
-	X = csr_matrix(data_X).toarray()
-
-	X = feature_selection(X,Y, fitur)
+	print "Kata tak dikenal = ", len(unknown_word)
+	for index in range(len(unknown_word)):
+		print unknown_word[index]
 
 	for index in range(10):
 		if index < size % num_folds:
@@ -288,9 +282,6 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 		clf.fit(train_comment_round, train_label_round)
 		result_SVM_label = np.concatenate((result_SVM_label,clf.predict(test_comment_round)))			
 		sum_SVM_acc += metrics.accuracy_score(test_label_round, clf.predict(test_comment_round))
-	
-	for  index in range(len(Y)):
-		print Y[index], "//", result_SVM_label[index]
 
 	print "-- Support Vector Machine --"
 	print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
@@ -339,44 +330,62 @@ def inlppreproses (list_of_comment):
 
 	return list_of_processed_comment
 
+def printToCSV (data_list):
+	with open('../Resource/word_list.csv', 'w') as csvfile:
+	    fieldnames = ['no', 'word']
+	    writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=",")
+	    writer.writeheader()
+
+	    for index in range(len(data_list)):
+	    	writer.writerow({'no':index, 'word':data_list[index]})
 
 list_of_data = []
 # list_of_feature = []
 list_of_label = []
-list_of_comment = []
+experiment_comment = []
+we_comment = []
 processed_data = []
 bag_of_feature  = []
 
-list_of_data = read_csv('../Resource/all_labeled.csv')
+experiment_data = read_csv('../Resource/all_labeled.csv')
 list_of_additional_data = read_csv('../Resource/addition1.csv')
 list_of_additional_data2 = read_csv('../Resource/addition2.csv')
-print len(list_of_data)
-print len(list_of_additional_data)
-print len(list_of_additional_data2)
 
-# total_data = list_of_data
-total_data = list_of_additional_data + list_of_additional_data2 + list_of_data
+we_data = list_of_additional_data + list_of_additional_data2
 
-print "Total Data Model WE = ", len(total_data)
+print "Total Data Model WE = ", len(we_data + experiment_data)
 
-for index in range(len(total_data)):
-	poster_status = total_data[index][2]
+for index in range(len(experiment_data)):
+	poster_status = experiment_data[index][2]
 	if poster_status == 'yes':
-		poster = total_data[index][0]
+		poster = experiment_data[index][0]
 	else:
-		if total_data[index][0] != poster:
-			comment = total_data[index][1]
-			label = total_data[index][3]
+		if experiment_data[index][0] != poster:
+			comment = experiment_data[index][1]
+			label = experiment_data[index][3]
 
 			processed_comment = pre_process(comment)
 			bag_of_feature += feature_extraction(nltk.word_tokenize(processed_comment))
 			list_of_label.append(label)
-			list_of_comment.append(processed_comment)
+			experiment_comment.append(processed_comment)
 
-list_of_comment = inlppreproses(list_of_comment)
+experiment_comment = inlppreproses(experiment_comment)
 
-experiment_comment = list_of_comment[0:len(list_of_data)]
-experiment_label = list_of_label[0:len(list_of_data)]
+for index in range(len(we_data)):
+	poster_status = we_data[index][2]
+	if poster_status == 'yes':
+		poster = we_data[index][0]
+	else:
+		if we_data[index][0] != poster:
+			comment = we_data[index][1]
+
+			processed_comment = pre_process(comment)
+			bag_of_feature += feature_extraction(nltk.word_tokenize(processed_comment))
+			we_comment.append(processed_comment)
+
+we_comment = inlppreproses(we_comment)
+
+total_comment = experiment_comment + we_comment
 
 for repeat in range(1):
 
@@ -384,29 +393,25 @@ for repeat in range(1):
 
 	sentences = []
 
-	for index in range(len(total_data)):
-		sentences.append(nltk.word_tokenize(pre_process(total_data[index][1])))
+	for index in range(len(total_comment)):
+		sentences.append(nltk.word_tokenize(total_comment[index]))
 	 
 	model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
-	# model.save("model3")
-
-	# print model.similarity("barakallah","beli")
+	print model.similar_by_word("senang")
 
 	# for index in range(len(model.wv.vocab)):
 	list_of_vector = []
 	list_of_word = []
 	for key in model.wv.vocab:
-		# if key == "saya":
-		# 	print model[key]	
-		# 	print get_average(model[key])
 		list_of_word.append(key)
-		# print model[key]
 		list_of_vector.append(model[key])
 		
 
 	word_vector = (list_of_word, list_of_vector)
 	print "Vocab Size = ", len(word_vector[0])
 
-	cross_fold_validation(10, experiment_comment, experiment_label, word_vector, 399)
+	# printToCSV(list_of_word)
+
+	# cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 2949)
 	end = time.time()
 	print end-start
