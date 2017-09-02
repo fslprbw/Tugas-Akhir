@@ -40,12 +40,31 @@ def pre_process(text):
 	text = re.sub('[?]+', ' _tanda_tanya_ ', text)
 	text = re.sub('[!]+', ' _tanda_seru_ ', text)
 	#convert emoticon and symbol
-	text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
+	text = re.sub(r'\\U000[^\s]{5}',convert_emoticon,text)
+	text = re.sub(r'\\u[\d][^\s]{3}',convert_emoticon,text)
+	#convert digit
+	text = re.sub('[\d]+', ' _angka_ ', text)
 	# Remove additional white spaces
 	text = re.sub('[\s]+', ' ', text)
 	#Convert to lower case
 	text = ''.join(text).lower()
 	return text
+
+def convert_emoticon (text):
+	emot_positif = ["\u0001f600","\u0001f601","\u0001f602","\u0001f923","\u0001f603","\u0001f604","\u0001f605","\u0001f606","\u0001f607","\u0001f609","\u0001f60a","\u0001f60b","\u0001f60e","\u0001f60d","\u0001f60e","\u0001f618","\u0001f617","\u0001f618","\u0001f619","\u0001f61a","\u0001f63a","\u0001f642","\u0001f917","\u0001f929","\u0001f44a","\u0001f44c","\u0001f44d","\u0001f44f","\u0001f495","\u0001f496","\u0001f49c","\u0001f49e","\u263a","\u2665",":)",":-)",":D",":-D",":*"]
+	emot_negatif = ["\u2639","\u0001f608","\u0001f641","\u0001f616","\u0001f61e","\u0001f61f","\u0001f624","\u0001f622","\u0001f62d","\u0001f626","\u0001f627","\u0001f628","\u0001f629","\u0001f92f","\u0001f62c","\u0001f630","\u0001f631","\u0001f633","\u0001f92a","\u0001f635","\u0001f63f","\u0001f621","\u0001f620","\u0001f92c","\u0001f494",":(",":-(",";(",";-("]
+	emot_netral = ["\u0001f914","\u0001f928","\u0001f610","\u0001f611","\u0001f612","\u0001f614","\u0001f636","\u0001f644","\u0001f64b","\u0001f64c","\u0001f64f","\u0001f68c","\u0001f60f","\u0001f623","\u0001f625","\u0001f62e","\u0001f910","\u0001f62f","\u0001f62a","\u0001f62b","\u0001f634","\u0001f60c","\u0001f61b","\u0001f61c","\u0001f61d","\u0001f924","\u0001f612","\u0001f613","\u0001f614","\u0001f615","\u0001f643","\u0001f911","\u0001f632","\u0001f1f0","\u0001f1f5","\u0001f334","\u0001f338","\u0001f34e","\u0001f3b6","\u0001f3ba","\u0001f3fb","\u0001f3fc","\u0001f479","\u0001f47b","\u0001f483","\u0001f48b","\u0001f4e2","\u0001f4e3","\u270c","\u2764","\u2b05"]
+	result = ""
+
+	if text.group(0) in emot_positif:
+		result = " _emot_pos_ "
+	elif text.group(0) in emot_negatif:
+		result = " _emot_neg_ "
+	else:
+		result = " _emot_netral_ "
+
+	return result
+
 
 def formalization (text):
 	result = ""
@@ -208,7 +227,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 	X = cv.fit_transform(list_of_comment).toarray()
 	Y = np.array(list_of_label)
 
-	# X = feature_selection(X,Y, fitur)
+	X = feature_selection(X,Y, fitur)
 
 	print "Total Kata = ", len(X[0])
 
@@ -352,23 +371,23 @@ for index in range(len(list_of_data)):
 			list_of_label.append(label)
 			list_of_comment.append(processed_comment)
 
-# list_of_comment = inlppreproses(list_of_comment)
+list_of_comment = inlppreproses(list_of_comment)
 
 print "Jumlah data awal :", len(list_of_data)
 print "Jumlah data model :", len(list_of_label)
 data_distribution(list_of_label)
 
-start = time.time()
-cross_fold_validation(10, list_of_comment, list_of_label, "DT", 4294)
-end = time.time()
-print "Waktu = ", end-start
+# start = time.time()
+# cross_fold_validation(10, list_of_comment, list_of_label, "DT", 4294)
+# end = time.time()
+# print "Waktu = ", end-start
+
+# start = time.time()
+# cross_fold_validation(10, list_of_comment, list_of_label, "NB", 4294)
+# end = time.time()
+# print "Waktu = ", end-start
 
 start = time.time()
-cross_fold_validation(10, list_of_comment, list_of_label, "NB", 4294)
-end = time.time()
-print "Waktu = ", end-start
-
-start = time.time()
-cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 4294)
+cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 400)
 end = time.time()
 print "Waktu = ", end-start

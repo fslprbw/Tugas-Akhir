@@ -47,10 +47,6 @@ def pre_process(text):
 	text = re.sub('[\s]+', ' ', text)
 	#Convert to lower case
 	text = ''.join(text).lower()
-	# # formalization
-	# text = formalization(text)
-	# #remove stopword
-	# text = remove_stopword(text)
 	return text
 
 def formalization (text):
@@ -391,6 +387,8 @@ we_comment = inlppreproses(we_comment)
 
 total_comment = experiment_comment + we_comment
 
+print len(total_comment)
+
 # printToCSV(total_comment, "list_of_comment")
 
 for repeat in range(1):
@@ -403,25 +401,24 @@ for repeat in range(1):
 		sentences.append(nltk.word_tokenize(total_comment[index]))
 
 	for sentence in sentences:
-		if ("Cuma" in sentence):
-			print sentence
+		print sentence
 	 
-	model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
-	# print model.similar_by_word("cuma")
+	# model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
+	# # print model.similar_by_word("cuma")
 
-	# for index in range(len(model.wv.vocab)):
-	list_of_vector = []
-	list_of_word = []
-	for key in model.wv.vocab:
-		list_of_word.append(key)
-		list_of_vector.append(model[key])
+	# # for index in range(len(model.wv.vocab)):
+	# list_of_vector = []
+	# list_of_word = []
+	# for key in model.wv.vocab:
+	# 	list_of_word.append(key)
+	# 	list_of_vector.append(model[key])
 		
 
-	word_vector = (list_of_word, list_of_vector)
-	print "Vocab Size = ", len(word_vector[0])
+	# word_vector = (list_of_word, list_of_vector)
+	# print "Vocab Size = ", len(word_vector[0])
 
-	printToCSV(list_of_word, "list_of_word_test")
+	# printToCSV(list_of_word, "list_of_word_test")
 
-	cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 3002)
-	end = time.time()
-	print end-start
+	# cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 3002)
+	# end = time.time()
+	# print end-start

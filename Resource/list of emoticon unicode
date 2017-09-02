@@ -1,15 +1,108 @@
 list of emoticon
+http://unicode.org/emoji/charts/full-emoji-list.html
 
-\U0001f44d = thumbs up (good)
-\U0001f619 = kissing face with smiling eyes (happy)
-\U0001f602 = face with tears of joy (???)
-\U0001f601 = grinning face (???)
-\U0001f60a = smile (positif)
-\U0001f604 = laugh (happy)
-\U0001f60b = ngiler (???)
-\U0001f47b = ghost (???)
-\U0001f483 = dancer
-\U0001f609 = wink
-\U0001f62a = sleepy face (kecewa)
-\U0001f61a = kissing face with closed eye (menggoda / suka)
-\U0001f618 = throwing kiss (menggoda / suka)
+u0001f1f0 netral  
+u0001f1f5 netral 
+u0001f334 netral
+u0001f338 netral
+u0001f34e netral
+u0001f3b6 netral
+u0001f3ba netral
+u0001f3fb netral
+u0001f3fc netral
+u0001f44a positif
+u0001f44c positif
+u0001f44d positif
+u0001f44f positif
+u0001f479 netral
+u0001f47b netral
+u0001f483 netral
+u0001f48b netral
+u0001f494 negatif
+u0001f495 positif
+u0001f496 positif
+u0001f49c positif
+u0001f49e positif
+u0001f4e2 netral
+u0001f4e3 netral
+u0001f600 positif
+u0001f601 positif
+u0001f602 positif
+u0001f603 positif
+u0001f604 positif
+u0001f605 positif
+u0001f606 positif
+u0001f607 positif
+u0001f608 negatif
+u0001f609 positif
+u0001f60a positif
+u0001f60b positif
+u0001f60c netral
+u0001f60d positif
+u0001f60e positif
+u0001f60f netral
+u0001f610 netral
+u0001f611 netral
+u0001f612 netral
+u0001f614 netral
+u0001f617 positif
+u0001f618 positif
+u0001f619 positif
+u0001f61a positif
+u0001f61c netral
+u0001f61d netral
+u0001f61e negatif
+u0001f61f negatif
+u0001f622 negatif
+u0001f623 netral
+u0001f624 negatif
+u0001f625 netral
+u0001f626 negatif
+u0001f629 negatif
+u0001f62a netral
+u0001f62b netral
+u0001f62d negatif
+u0001f630 negatif
+u0001f631 negatif
+u0001f635 negatif
+u0001f63a positif
+u0001f63f negatif
+u0001f641 negatif
+u0001f644 netral
+u0001f64b netral
+u0001f64c netral
+u0001f64f netral
+u0001f68c netral
+u0001f914 netral
+u0001f917 positif
+u0001f923 positif
+u0139 -
+u0178 -
+u2019 -
+u201c -
+u25a1 -
+u263a positif
+u2665 positif
+u270c netral
+u2764 netral
+u2b05 netral
+
+:)
+:-)
+:D
+:-D
+:*
+
+:(
+:-(
+;(
+;-(
+
+positif
+"\u0001f600","\u0001f601","\u0001f602","\u0001f923","\u0001f603","\u0001f604","\u0001f605","\u0001f606","u0001f607","\u0001f609","\u0001f60a","\u0001f60b","\u0001f60e","\u0001f60d","u0001f60e","\u0001f618","\u0001f617","u0001f618","\u0001f619","\u0001f61a","\u0001f63a","\u0001f642","\u0001f917","\u0001f929","u0001f44a","u0001f44c","u0001f44d","u0001f44f","u0001f495","u0001f496","u0001f49c","u0001f49e","\u263a","\u2665",":)",":-)",":D".":-D",":*"
+
+netral
+"\u0001f914","\u0001f928","\u0001f610","\u0001f611","u0001f612","u0001f614","\u0001f636","\u0001f644","u0001f64b","u0001f64c","u0001f64f","u0001f68c","\u0001f60f","\u0001f623","\u0001f625","\u0001f62e","\u0001f910","\u0001f62f","\u0001f62a","\u0001f62b","\u0001f634","\u0001f60c","\u0001f61b","\u0001f61c","\u0001f61d","\u0001f924","\u0001f612","\u0001f613","\u0001f614","\u0001f615","\u0001f643","\u0001f911","\u0001f632","u0001f1f0","u0001f1f5","u0001f334","u0001f338","u0001f34e","u0001f3b6","u0001f3ba","u0001f3fb","u0001f3fc","u0001f479","u0001f47b","u0001f483","u0001f48b","u0001f4e2","u0001f4e3","\u270c","\u2764","\u2b05"
+
+negatif
+"\u2639","u0001f608","\u0001f641","\u0001f616","\u0001f61e","\u0001f61f","\u0001f624","\u0001f622","\u0001f62d","\u0001f626","\u0001f627","\u0001f628","\u0001f629","\u0001f92f","\u0001f62c","\u0001f630","\u0001f631","\u0001f633","\u0001f92a","\u0001f635","u0001f63f","\u0001f621","\u0001f620","\u0001f92c","u0001f494",":(",":-(",";(",";-("
