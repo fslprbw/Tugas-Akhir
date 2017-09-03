@@ -35,13 +35,14 @@ def pre_process(text):
 	text = re.sub('@'+poster,' _mentionpemilik_ ',text)
 	text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
 	#Convert mark
+	text = re.sub('[/]+', ' ', text)
 	text = re.sub('[,]+', ' ', text)
 	text = re.sub('[.]+', ' _tanda_titik_ ', text)
 	text = re.sub('[?]+', ' _tanda_tanya_ ', text)
 	text = re.sub('[!]+', ' _tanda_seru_ ', text)
 	#convert emoticon and symbol
 	text = re.sub(r'\\U000[^\s]{5}',convert_emoticon,text)
-	text = re.sub(r'\\u[\d][^\s]{3}',convert_emoticon,text)
+	# text = re.sub(r'\\u[\d][^\s]{3}',' _emoticon_ ',text)
 	#convert digit
 	text = re.sub('[\d]+', ' _angka_ ', text)
 	# Remove additional white spaces
@@ -51,20 +52,20 @@ def pre_process(text):
 	return text
 
 def convert_emoticon (text):
-	emot_positif = ["\u0001f600","\u0001f601","\u0001f602","\u0001f923","\u0001f603","\u0001f604","\u0001f605","\u0001f606","\u0001f607","\u0001f609","\u0001f60a","\u0001f60b","\u0001f60e","\u0001f60d","\u0001f60e","\u0001f618","\u0001f617","\u0001f618","\u0001f619","\u0001f61a","\u0001f63a","\u0001f642","\u0001f917","\u0001f929","\u0001f44a","\u0001f44c","\u0001f44d","\u0001f44f","\u0001f495","\u0001f496","\u0001f49c","\u0001f49e","\u263a","\u2665",":)",":-)",":D",":-D",":*"]
-	emot_negatif = ["\u2639","\u0001f608","\u0001f641","\u0001f616","\u0001f61e","\u0001f61f","\u0001f624","\u0001f622","\u0001f62d","\u0001f626","\u0001f627","\u0001f628","\u0001f629","\u0001f92f","\u0001f62c","\u0001f630","\u0001f631","\u0001f633","\u0001f92a","\u0001f635","\u0001f63f","\u0001f621","\u0001f620","\u0001f92c","\u0001f494",":(",":-(",";(",";-("]
-	emot_netral = ["\u0001f914","\u0001f928","\u0001f610","\u0001f611","\u0001f612","\u0001f614","\u0001f636","\u0001f644","\u0001f64b","\u0001f64c","\u0001f64f","\u0001f68c","\u0001f60f","\u0001f623","\u0001f625","\u0001f62e","\u0001f910","\u0001f62f","\u0001f62a","\u0001f62b","\u0001f634","\u0001f60c","\u0001f61b","\u0001f61c","\u0001f61d","\u0001f924","\u0001f612","\u0001f613","\u0001f614","\u0001f615","\u0001f643","\u0001f911","\u0001f632","\u0001f1f0","\u0001f1f5","\u0001f334","\u0001f338","\u0001f34e","\u0001f3b6","\u0001f3ba","\u0001f3fb","\u0001f3fc","\u0001f479","\u0001f47b","\u0001f483","\u0001f48b","\u0001f4e2","\u0001f4e3","\u270c","\u2764","\u2b05"]
+
+	emot_positif = ["u0001f600","u0001f601","u0001f602","u0001f923","u0001f603","u0001f604","u0001f605","u0001f606","u0001f607","u0001f609","u0001f60a","u0001f60b","u0001f60e","u0001f60d","u0001f60e","u0001f618","u0001f617","u0001f618","u0001f619","u0001f61a","u0001f63a","u0001f642","u0001f917","u0001f929","u0001f44a","u0001f44c","u0001f44d","u0001f44f","u0001f495","u0001f496","u0001f49c","u0001f49e",":)",":-)",":D",":-D",":*"]
+	emot_negatif = ["u0001f608","u0001f641","u0001f616","u0001f61e","u0001f61f","u0001f624","u0001f622","u0001f62d","u0001f626","u0001f627","u0001f628","u0001f629","u0001f92f","u0001f62c","u0001f630","u0001f631","u0001f633","u0001f92a","u0001f635","u0001f63f","u0001f621","u0001f620","u0001f92c","u0001f494",":(",":-(",";(",";-("]
+	emot_netral = ["u0001f914","u0001f928","u0001f610","u0001f611","u0001f612","u0001f614","u0001f636","u0001f644","u0001f64b","u0001f64c","u0001f64f","u0001f68c","u0001f60f","u0001f623","u0001f625","u0001f62e","u0001f910","u0001f62f","u0001f62a","u0001f62b","u0001f634","u0001f60c","u0001f61b","u0001f61c","u0001f61d","u0001f924","u0001f612","u0001f613","u0001f614","u0001f615","u0001f643","u0001f911","u0001f632","u0001f1f0","u0001f1f5","u0001f334","u0001f338","u0001f34e","u0001f3b6","u0001f3ba","u0001f3fb","u0001f3fc","u0001f479","u0001f47b","u0001f483","u0001f48b","u0001f4e2","u0001f4e3"]
 	result = ""
 
-	if text.group(0) in emot_positif:
+	if text.group(0).lower()[1:] in emot_positif:
 		result = " _emot_pos_ "
-	elif text.group(0) in emot_negatif:
+	elif text.group(0).lower()[1:] in emot_negatif:
 		result = " _emot_neg_ "
 	else:
 		result = " _emot_netral_ "
 
 	return result
-
 
 def formalization (text):
 	result = ""
@@ -182,14 +183,19 @@ def information_gain(X, y):
 
 
 def feature_selection (X,Y, number_of_feature):
+	print "Seleksi FItur = ", number_of_feature
 	new_X = X
+	max_feature_idx = number_of_feature-1
 
 	Z = information_gain(X,Y)
-	print "Jumlah Kata = ", len(Z)
 	Z2 = sorted(Z, reverse=True)
 
+	if (max_feature_idx >= len(Z2)):
+		print "Nilai seleksi fitur melebihi jumlah feature", max_feature_idx, ":", len(Z2)
+		max_feature_idx = len(Z2)-1
+
 	for index in range(len(Z)):
-		if (Z[index] <= Z2[number_of_feature]):
+		if (Z[index] <= Z2[max_feature_idx]):
 			for a in range(len(X)):
 				new_X[a][index] = 0
 
@@ -222,7 +228,8 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 	result_SVM_label = []
 	kata = []
 
-	cv = CountVectorizer(input='content', binary=True, tokenizer=lambda text:nltk.word_tokenize(text))
+	cv = CountVectorizer()
+	# cv = CountVectorizer(input='content', binary=True, tokenizer=lambda text:nltk.word_tokenize(text))
 
 	X = cv.fit_transform(list_of_comment).toarray()
 	Y = np.array(list_of_label)
@@ -231,7 +238,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 
 	print "Total Kata = ", len(X[0])
 
-	printToCSV(cv.get_feature_names(), "kata")
+	# printToCSV(cv.get_feature_names(), "kata")
 
 	for index in range(10):
 		if index < size % num_folds:
@@ -373,21 +380,26 @@ for index in range(len(list_of_data)):
 
 list_of_comment = inlppreproses(list_of_comment)
 
+printToCSV(list_of_comment, "komen dengan preproses")
+# printToCSV(list_of_label, "label awal")
+
 print "Jumlah data awal :", len(list_of_data)
 print "Jumlah data model :", len(list_of_label)
 data_distribution(list_of_label)
 
-# start = time.time()
-# cross_fold_validation(10, list_of_comment, list_of_label, "DT", 4294)
-# end = time.time()
-# print "Waktu = ", end-start
+# for repeat in range(1):
 
-# start = time.time()
-# cross_fold_validation(10, list_of_comment, list_of_label, "NB", 4294)
-# end = time.time()
-# print "Waktu = ", end-start
+# 	# start = time.time()
+# 	# cross_fold_validation(10, list_of_comment, list_of_label, "DT", 4294)
+# 	# end = time.time()
+# 	# print "Waktu = ", end-start
 
-start = time.time()
-cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 400)
-end = time.time()
-print "Waktu = ", end-start
+# 	# start = time.time()
+# 	# cross_fold_validation(10, list_of_comment, list_of_label, "NB", 4294)
+# 	# end = time.time()
+# 	# print "Waktu = ", end-start
+
+# 	start = time.time()
+# 	cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 2500)
+# 	end = time.time()
+# 	print "Waktu = ", end-start

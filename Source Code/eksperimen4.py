@@ -27,27 +27,46 @@ def pre_process(text):
 	text = text.encode('unicode_escape')
 	#convert unicode of newline to newline
 	text = re.sub(r'\\n',' ',text)
-	text = re.sub('[/]+', ' atau ', text)
-	text = re.sub('[&]+', ' dan ', text)
 	# Convert www.* or https?://* to URL
 	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
 	#Replace #word with word
 	text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
-	#Convert @username to AT_USER
+	# Convert @username to AT_USER
 	text = re.sub('@'+poster,' _mentionpemilik_ ',text)
 	text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
 	#Convert mark
+	text = re.sub('[/]+', ' ', text)
 	text = re.sub('[,]+', ' ', text)
 	text = re.sub('[.]+', ' _tanda_titik_ ', text)
 	text = re.sub('[?]+', ' _tanda_tanya_ ', text)
 	text = re.sub('[!]+', ' _tanda_seru_ ', text)
 	#convert emoticon and symbol
-	text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
+	text = re.sub(r'\\U000[^\s]{5}',convert_emoticon,text)
+	# text = re.sub(r'\\u[\d][^\s]{3}',' _emoticon_ ',text)
+	#convert digit
+	text = re.sub('[\d]+', ' _angka_ ', text)
 	# Remove additional white spaces
 	text = re.sub('[\s]+', ' ', text)
 	#Convert to lower case
 	text = ''.join(text).lower()
 	return text
+
+def convert_emoticon (text):
+
+	emot_positif = ["u0001f600","u0001f601","u0001f602","u0001f923","u0001f603","u0001f604","u0001f605","u0001f606","u0001f607","u0001f609","u0001f60a","u0001f60b","u0001f60e","u0001f60d","u0001f60e","u0001f618","u0001f617","u0001f618","u0001f619","u0001f61a","u0001f63a","u0001f642","u0001f917","u0001f929","u0001f44a","u0001f44c","u0001f44d","u0001f44f","u0001f495","u0001f496","u0001f49c","u0001f49e",":)",":-)",":D",":-D",":*"]
+	emot_negatif = ["u0001f608","u0001f641","u0001f616","u0001f61e","u0001f61f","u0001f624","u0001f622","u0001f62d","u0001f626","u0001f627","u0001f628","u0001f629","u0001f92f","u0001f62c","u0001f630","u0001f631","u0001f633","u0001f92a","u0001f635","u0001f63f","u0001f621","u0001f620","u0001f92c","u0001f494",":(",":-(",";(",";-("]
+	emot_netral = ["u0001f914","u0001f928","u0001f610","u0001f611","u0001f612","u0001f614","u0001f636","u0001f644","u0001f64b","u0001f64c","u0001f64f","u0001f68c","u0001f60f","u0001f623","u0001f625","u0001f62e","u0001f910","u0001f62f","u0001f62a","u0001f62b","u0001f634","u0001f60c","u0001f61b","u0001f61c","u0001f61d","u0001f924","u0001f612","u0001f613","u0001f614","u0001f615","u0001f643","u0001f911","u0001f632","u0001f1f0","u0001f1f5","u0001f334","u0001f338","u0001f34e","u0001f3b6","u0001f3ba","u0001f3fb","u0001f3fc","u0001f479","u0001f47b","u0001f483","u0001f48b","u0001f4e2","u0001f4e3"]
+	result = ""
+
+	if text.group(0).lower()[1:] in emot_positif:
+		result = " _emot_pos_ "
+	elif text.group(0).lower()[1:] in emot_negatif:
+		result = " _emot_neg_ "
+	else:
+		result = " _emot_netral_ "
+
+	return result
+
 
 def formalization (text):
 	result = ""
@@ -172,8 +191,8 @@ def feature_selection (X,Y, number_of_feature):
 	Z2 = sorted(Z, reverse=True)
 
 	if (max_feature_idx >= len(Z2)):
-		max_feature_idx = len(Z2)-1
 		print "Nilai seleksi fitur melebihi jumlah feature", max_feature_idx, ":", len(Z2)
+		max_feature_idx = len(Z2)-1
 
 	for index in range(len(Z)):
 		if (Z[index] <= Z2[max_feature_idx]):
@@ -202,6 +221,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 	result_DT_label = []
 	result_SVM_label = []
 
+	# cv = CountVectorizer()
 	cv = CountVectorizer(input='content', binary=True, tokenizer=lambda text:nltk.word_tokenize(text))
 
 	Xtemp = cv.fit_transform(list_of_comment).toarray()
@@ -289,6 +309,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 	print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
 	print sum_SVM_acc/num_folds
 	# print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
+	printToCSV(result_SVM_label, "hasil_WE")
 
 
 def inlppreproses (list_of_comment):
@@ -392,33 +413,33 @@ print len(total_comment)
 # printToCSV(total_comment, "list_of_comment")
 
 for repeat in range(1):
-
+	
 	start = time.time()
 
 	sentences = []
 
 	for index in range(len(total_comment)):
 		sentences.append(nltk.word_tokenize(total_comment[index]))
-
-	for sentence in sentences:
-		print sentence
 	 
-	# model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
-	# # print model.similar_by_word("cuma")
+	model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
+	# print model.similar_by_word("cuma")
 
-	# # for index in range(len(model.wv.vocab)):
-	# list_of_vector = []
-	# list_of_word = []
-	# for key in model.wv.vocab:
-	# 	list_of_word.append(key)
-	# 	list_of_vector.append(model[key])
+	# for index in range(len(model.wv.vocab)):
+	list_of_vector = []
+	list_of_word = []
+	for key in model.wv.vocab:
+		list_of_word.append(key)
+		list_of_vector.append(model[key])
 		
 
-	# word_vector = (list_of_word, list_of_vector)
-	# print "Vocab Size = ", len(word_vector[0])
+	word_vector = (list_of_word, list_of_vector)
+	print "Vocab Size = ", len(word_vector[0])
 
 	# printToCSV(list_of_word, "list_of_word_test")
 
-	# cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 3002)
-	# end = time.time()
-	# print end-start
+
+	start = time.time()
+
+	cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 500)
+	end = time.time()
+	print end-start
