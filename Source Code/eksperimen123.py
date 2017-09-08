@@ -28,23 +28,24 @@ def pre_process(text):
 	#convert unicode of newline to newline
 	text = re.sub(r'\\n',' ',text)
 	# Convert www.* or https?://* to URL
-	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
-	#Replace #word with word
-	text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
-	# Convert @username to AT_USER
-	text = re.sub('@'+poster,' _mentionpemilik_ ',text)
-	text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
-	#Convert mark
-	text = re.sub('[/]+', ' ', text)
-	text = re.sub('[,]+', ' ', text)
-	text = re.sub('[.]+', ' _tanda_titik_ ', text)
-	text = re.sub('[?]+', ' _tanda_tanya_ ', text)
-	text = re.sub('[!]+', ' _tanda_seru_ ', text)
-	#convert emoticon and symbol
-	text = re.sub(r'\\U000[^\s]{5}',convert_emoticon,text)
-	# text = re.sub(r'\\u[\d][^\s]{3}',' _emoticon_ ',text)
-	#convert digit
-	text = re.sub('[\d]+', ' _angka_ ', text)
+	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _url_ ',text)
+	# #Replace #word with word
+	# text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
+	# # Convert @username to AT_USER
+	# text = re.sub('@'+poster,' _mentionpemilik_ ',text)
+	# text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
+	# #Convert mark
+	# text = re.sub('[/]+', ' ', text)
+	# text = re.sub('[&]+', ' ', text)
+	# text = re.sub('[,]+', ' ', text)
+	# text = re.sub('[.]+', ' _tandatitik_ ', text)
+	# text = re.sub('[?]+', ' _tandatanya_ ', text)
+	# text = re.sub('[!]+', ' _tandaseru_ ', text)
+	# #convert emoticon and symbol
+	# text = re.sub(r'\\U000[^\s]{5}',convert_emoticon,text)
+	# # text = re.sub(r'\\u[\d][^\s]{3}',' _emoticon_ ',text)
+	# #convert digit
+	# text = re.sub('[\d]+', ' _angka_ ', text)
 	# Remove additional white spaces
 	text = re.sub('[\s]+', ' ', text)
 	#Convert to lower case
@@ -185,19 +186,29 @@ def information_gain(X, y):
 def feature_selection (X,Y, number_of_feature):
 	print "Seleksi FItur = ", number_of_feature
 	new_X = X
-	max_feature_idx = number_of_feature-1
 
+	list_of_gain = []
 	Z = information_gain(X,Y)
-	Z2 = sorted(Z, reverse=True)
-
-	if (max_feature_idx >= len(Z2)):
-		print "Nilai seleksi fitur melebihi jumlah feature", max_feature_idx, ":", len(Z2)
-		max_feature_idx = len(Z2)-1
-
 	for index in range(len(Z)):
-		if (Z[index] <= Z2[max_feature_idx]):
+		feature_gain = [Z[index],index]
+		list_of_gain.append(feature_gain)
+
+	list_of_gain = sorted(list_of_gain, reverse=True)
+
+	selected_feature = []
+
+	if (number_of_feature > len(Z)):
+		print "Nilai seleksi fitur melebihi jumlah feature", number_of_feature, ":", len(Z)
+		number_of_feature = len(Z)
+
+	for index in range(number_of_feature):
+		selected_feature.append(list_of_gain[index][1])
+
+	for index in range(len(X[0])):
+		if (index not in selected_feature):
 			for a in range(len(X)):
 				new_X[a][index] = 0
+
 
 	return new_X
 
@@ -234,7 +245,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 	X = cv.fit_transform(list_of_comment).toarray()
 	Y = np.array(list_of_label)
 
-	X = feature_selection(X,Y, fitur)
+	# X = feature_selection(X,Y, fitur)
 
 	print "Total Kata = ", len(X[0])
 
@@ -310,7 +321,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 		print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
 		print sum_SVM_acc/num_folds
 		print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
-		printToCSV(result_SVM_label, "hasil_SVM")
+		# printToCSV(result_SVM_label, "hasil_SVM")
 
 	else :
 		 	print " Algorithm not Found"
@@ -334,7 +345,7 @@ def inlppreproses (list_of_comment):
 				inlp_input += "`"
 
 			inlp_output = formalization(inlp_input)
-			inlp_output = remove_stopword(inlp_output)
+			# inlp_output = remove_stopword(inlp_output)
 
 			for index in range(len(inlp_output)):
 				if (inlp_output[index] == "`"):
@@ -347,7 +358,7 @@ def inlppreproses (list_of_comment):
 				inlp_input += "`"
 
 			inlp_output = formalization(inlp_input)
-			inlp_output = remove_stopword(inlp_output)
+			# inlp_output = remove_stopword(inlp_output)
 
 			for index in range(len(inlp_output)):
 				if (inlp_output[index] == "`"):
@@ -378,7 +389,7 @@ for index in range(len(list_of_data)):
 			list_of_label.append(label)
 			list_of_comment.append(processed_comment)
 
-list_of_comment = inlppreproses(list_of_comment)
+# list_of_comment = inlppreproses(list_of_comment)
 
 printToCSV(list_of_comment, "komen dengan preproses")
 # printToCSV(list_of_label, "label awal")
@@ -387,19 +398,20 @@ print "Jumlah data awal :", len(list_of_data)
 print "Jumlah data model :", len(list_of_label)
 data_distribution(list_of_label)
 
-# for repeat in range(1):
+for repeat in range(1):
 
-# 	# start = time.time()
-# 	# cross_fold_validation(10, list_of_comment, list_of_label, "DT", 4294)
-# 	# end = time.time()
-# 	# print "Waktu = ", end-start
+	start = time.time()
+	cross_fold_validation(10, list_of_comment, list_of_label, "DT", 4295)
+	end = time.time()
+	print "Waktu = ", end-start
 
-# 	# start = time.time()
-# 	# cross_fold_validation(10, list_of_comment, list_of_label, "NB", 4294)
-# 	# end = time.time()
-# 	# print "Waktu = ", end-start
+	# start = time.time()
+	# cross_fold_validation(10, list_of_comment, list_of_label, "NB", 250+(repeat*250))
+	# end = time.time()
+	# print "Waktu = ", end-start
 
-# 	start = time.time()
-# 	cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 2500)
-# 	end = time.time()
-# 	print "Waktu = ", end-start
+	# start = time.time()
+	# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 250)
+	# # print "Fitur dipilih = ", 1250+(repeat*250)
+	# end = time.time()
+	# print "Waktu = ", end-start

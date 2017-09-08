@@ -27,8 +27,8 @@ def pre_process(text):
 	text = text.encode('unicode_escape')
 	#convert unicode of newline to newline
 	text = re.sub(r'\\n',' ',text)
-	# Convert www.* or https?://* to URL
-	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
+	# # Convert www.* or https?://* to URL
+	# text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _url_ ',text)
 	#Replace #word with word
 	text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
 	# Convert @username to AT_USER
@@ -36,10 +36,11 @@ def pre_process(text):
 	text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
 	#Convert mark
 	text = re.sub('[/]+', ' ', text)
+	text = re.sub('[&]+', ' ', text)
 	text = re.sub('[,]+', ' ', text)
-	text = re.sub('[.]+', ' _tanda_titik_ ', text)
-	text = re.sub('[?]+', ' _tanda_tanya_ ', text)
-	text = re.sub('[!]+', ' _tanda_seru_ ', text)
+	text = re.sub('[.]+', ' _tandatitik_ ', text)
+	text = re.sub('[?]+', ' _tandatanya_ ', text)
+	text = re.sub('[!]+', ' _tandaseru_ ', text)
 	#convert emoticon and symbol
 	text = re.sub(r'\\U000[^\s]{5}',convert_emoticon,text)
 	# text = re.sub(r'\\u[\d][^\s]{3}',' _emoticon_ ',text)
@@ -184,31 +185,33 @@ def information_gain(X, y):
 
 
 def feature_selection (X,Y, number_of_feature):
+	print "Seleksi FItur = ", number_of_feature
 	new_X = X
-	max_feature_idx = number_of_feature-1
 
+	list_of_gain = []
 	Z = information_gain(X,Y)
-	Z2 = sorted(Z, reverse=True)
-
-	if (max_feature_idx >= len(Z2)):
-		print "Nilai seleksi fitur melebihi jumlah feature", max_feature_idx, ":", len(Z2)
-		max_feature_idx = len(Z2)-1
-
 	for index in range(len(Z)):
-		if (Z[index] <= Z2[max_feature_idx]):
+		feature_gain = [Z[index],index]
+		list_of_gain.append(feature_gain)
+
+	list_of_gain = sorted(list_of_gain, reverse=True)
+
+	selected_feature = []
+
+	if (number_of_feature > len(Z)):
+		print "Nilai seleksi fitur melebihi jumlah feature", number_of_feature, ":", len(Z)
+		number_of_feature = len(Z)
+
+	for index in range(number_of_feature):
+		selected_feature.append(list_of_gain[index][1])
+
+	for index in range(len(X[0])):
+		if (index not in selected_feature):
 			for a in range(len(X)):
 				new_X[a][index] = 0
 
-	return new_X
 
-# def get_average(feature_vector):
-# 	size = len(feature_vector)
-# 	total = 0
-# 	average = 0
-# 	for index in range(size):
-# 		total += feature_vector[index]
-# 	average = total/size
-# 	return average
+	return new_X
 
 def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_vector ,fitur):
 	num_folds = number_of_fold
@@ -308,7 +311,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 	print "-- Support Vector Machine --"
 	print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
 	print sum_SVM_acc/num_folds
-	# print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
+	print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
 	printToCSV(result_SVM_label, "hasil_WE")
 
 
@@ -330,7 +333,7 @@ def inlppreproses (list_of_comment):
 				inlp_input += "`"
 
 			inlp_output = formalization(inlp_input)
-			inlp_output = remove_stopword(inlp_output)
+			# inlp_output = remove_stopword(inlp_output)
 
 			for index in range(len(inlp_output)):
 				if (inlp_output[index] == "`"):
@@ -343,7 +346,7 @@ def inlppreproses (list_of_comment):
 				inlp_input += "`"
 
 			inlp_output = formalization(inlp_input)
-			inlp_output = remove_stopword(inlp_output)
+			# inlp_output = remove_stopword(inlp_output)
 
 			for index in range(len(inlp_output)):
 				if (inlp_output[index] == "`"):
@@ -408,6 +411,7 @@ we_comment = inlppreproses(we_comment)
 
 total_comment = experiment_comment + we_comment
 
+
 print len(total_comment)
 
 # printToCSV(total_comment, "list_of_comment")
@@ -421,7 +425,10 @@ for repeat in range(1):
 	for index in range(len(total_comment)):
 		sentences.append(nltk.word_tokenize(total_comment[index]))
 	 
-	model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
+	model = word2vec.Word2Vec(sentences, min_count=1, size=500, window=15, negative=45, iter=90, sg=1, seed=1)
+	end = time.time()
+	print "waktu model = ", end-start
+	model.save("best_model_we")
 	# print model.similar_by_word("cuma")
 
 	# for index in range(len(model.wv.vocab)):
@@ -436,10 +443,8 @@ for repeat in range(1):
 	print "Vocab Size = ", len(word_vector[0])
 
 	# printToCSV(list_of_word, "list_of_word_test")
-
-
 	start = time.time()
 
-	cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 500)
+	cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 250)
 	end = time.time()
-	print end-start
+	print "waktu ml = ", end-start

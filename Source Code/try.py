@@ -1,388 +1,192 @@
-# -*- coding: unicode-escape -*-
-import os, sys
-
-import nltk
-import time
 import csv
-from py4j.java_gateway import JavaGateway
-import re
+# from BaselineBok import BaselineBok
+from keras.models import Sequential, Model
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.layers import Activation, Dense, Input, Conv1D, Embedding, MaxPooling1D, Flatten, Dropout, GlobalMaxPooling1D
+from keras.layers.merge import Concatenate
+from keras import regularizers
+from keras.constraints import max_norm
+from keras.utils import np_utils
 import numpy as np
-import scipy as scipy
-from nltk.util import ngrams
+import gensim
+# import glove
+from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
+import random
+from keras.callbacks import EarlyStopping
+from sklearn.utils import class_weight
 from collections import Counter
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import classification_report
-from sklearn import metrics
-from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import SVC
-from sklearn.feature_selection import VarianceThreshold
-from subprocess import Popen, PIPE, STDOUT
-from sklearn.feature_selection import VarianceThreshold
-from gensim.models import word2vec
-from scipy.sparse import csr_matrix
+import csv
+# from imblearn.over_sampling import SMOTE, RandomOverSampler
 
-def pre_process(text):
-	#turn emoticon to unicode
-	text = unicode(text, 'utf-8')
-	text = text.encode('unicode_escape')
-	#convert unicode of newline to newline
-	text = re.sub(r'\\n',' ',text)
-	# Convert www.* or https?://* to URL
-	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _URL_ ',text)
-	#Replace #word with word
-	text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
-	#Convert @username to AT_USER
-	text = re.sub('@'+poster,' _mentionpemilik_ ',text)
-	text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
-	#Convert mark
-	text = re.sub('[,]+', ' ', text)
-	text = re.sub('[.]+', ' _tanda_titik_ ', text)
-	text = re.sub('[?]+', ' _tanda_tanya_ ', text)
-	text = re.sub('[!]+', ' _tanda_seru_ ', text)
-	#convert emoticon and symbol
-	text = re.sub(r'\\U000[^\s]{5}',' _emoticon_ ',text)
-	# Remove additional white spaces
-	text = re.sub('[\s]+', ' ', text)
-	#Convert to lower case
-	text = ''.join(text).lower()
-	# # formalization
-	# text = formalization(text)
-	# #remove stopword
-	# text = remove_stopword(text)
-	return text
+EMBEDDING_DIM = 500 # / 400
+MAX_SEQUENCE_LENGTH = 200 # ?? / 200
+FILTER_SIZE = (3,4,5)
+NUM_FILTERS = 100 #100 - 600 / 100
+DROPOUT_PROB = (0.5, 0.5)
+MAXNORM = 3
+EMBEDDING = 'old' # 'old' | 'new'
 
-def formalization (text):
-	result = ""
-	p = Popen(['java', '-jar', 'INLPPreproses.jar', 'formalization', text], stdout=PIPE, stderr=STDOUT)
-	result = ""
-	for line in p.stdout:
-		result = line
-	return result
+# Training parameters
+BATCH_SIZE = 64
+NUM_EPOCHS = 5
 
-def remove_stopword (text):
-	result = ""
-	p = Popen(['java', '-jar', 'INLPPreproses.jar', 'remove_stopword', text], stdout=PIPE, stderr=STDOUT)
-	result = ""
-	for line in p.stdout:
-		result = line
-	return result
+def printToCSV (data_list, filename):
+    with open('../Resource/'+filename+'.csv', 'w') as csvfile:
+        fieldnames = ['no', 'word']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=",")
+        writer.writeheader()
 
-def feature_extraction(text):
-	# feature = {}
-	c = Counter(text)
-	text = list(c)
-	return text
-	# for i in range(len(text)):
-	# 	feature[text[i]] = "true"
-	# return feature
+        for index in range(len(data_list)):
+            writer.writerow({'no':index, 'word':data_list[index]})
 
-def read_csv(file_directory):
-	instagram_data = []
-	with open(file_directory) as csvfile:
-		reader = csv.DictReader(csvfile)
-		for row in reader:
-			data = []
-			data.append(row['id'])
-			data.append(row['content'])
-			data.append(row['main post'])
-			data.append(row['label'])
-			instagram_data.append(data)
-	return instagram_data
+def shuffle_weights(model, weights=None):
 
-def show_feature_info(bag_of_feature):
-	count = Counter(bag_of_feature)
-	print 'Jumlah Feature = ', len(list(count))
-	# print "== All Features =="
-	# print count
+    if weights is None:
+        weights = model.get_weights()
+    weights = [np.random.permutation(w.flat).reshape(w.shape) for w in weights]
+    model.set_weights(weights)
 
-def data_distribution(list_of_label):
-	jawab = 0
-	baca = 0
-	abaikan = 0
-	for index in range(len(list_of_label)):
-		if list_of_label[index] == "jawab":
-			jawab += 1
-		elif list_of_label[index] == "baca":
-			baca += 1			
-		elif list_of_label[index] == "abaikan":
-			abaikan += 1
-		else:
-			print index
-			print list_of_comment[index-1]
-	print "jawab : ", jawab, " - baca : ", baca, " - abaikan : ", abaikan
+if __name__ == '__main__':
 
-def information_gain(X, y):
+    MODEL_TYPE = 'non-static'
+    file_csv = '../Resource/all_labeled.csv'
 
-    def _calIg():
-        entropy_x_set = 0
-        entropy_x_not_set = 0
-        for c in classCnt:
-            probs = classCnt[c] / float(featureTot)
-            entropy_x_set = entropy_x_set - probs * np.log(probs)
-            probs = (classTotCnt[c] - classCnt[c]) / float(tot - featureTot)
-            entropy_x_not_set = entropy_x_not_set - probs * np.log(probs)
-        for c in classTotCnt:
-            if c not in classCnt:
-                probs = classTotCnt[c] / float(tot - featureTot)
-                entropy_x_not_set = entropy_x_not_set - probs * np.log(probs)
-        return entropy_before - ((featureTot / float(tot)) * entropy_x_set
-                             +  ((tot - featureTot) / float(tot)) * entropy_x_not_set)
+    raw_sentences = []
+    labels = []
 
-    tot = X.shape[0]
-    classTotCnt = {}
-    entropy_before = 0
-    for i in y:
-        if i not in classTotCnt:
-            classTotCnt[i] = 1
+    with open(file_csv, "r") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for line in reader:
+            if line["label"] != "x":
+                raw_sentences.append(line["content"])
+                labels.append(line["label"])
+
+    labels_index = {'jawab': 0, 'baca': 1, 'abaikan': 2}
+    reverse_labels_index = {0: 'jawab', 1: 'baca', 2: 'abaikan'}
+    labels = [labels_index[label] for label in labels]    
+
+    tokenizer = Tokenizer(num_words=None)
+    tokenizer.fit_on_texts(raw_sentences)
+    sequences = tokenizer.texts_to_sequences(raw_sentences)
+    word_index = tokenizer.word_index
+    print('Found %s unique tokens.' % len(word_index))
+
+    data = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH, padding="post", truncating="post")
+
+    X = data
+    Y = np_utils.to_categorical(np.asarray(labels))
+    labels = np.array(labels)
+
+    w2v_model = gensim.models.Word2Vec.load('best_model_we')
+
+    embeddings_index = dict(zip(w2v_model.wv.index2word, w2v_model.wv.syn0))
+
+    embedding_matrix = np.zeros((len(word_index) + 1, EMBEDDING_DIM))
+    for word, i in word_index.items():
+        embedding_vector = embeddings_index.get(word)
+        if embedding_vector is not None:
+            embedding_matrix[i] = embedding_vector
+
+
+    sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH, EMBEDDING_DIM))
+
+    if MODEL_TYPE == 'static':
+        trainable = False 
+    else: 
+        trainable = True
+
+    if MODEL_TYPE == 'rand':        
+        embedding_layer = Embedding(len(word_index) + 1, EMBEDDING_DIM, input_length=MAX_SEQUENCE_LENGTH, trainable=trainable)
+    else:
+        embedding_layer = Embedding(len(word_index) + 1, EMBEDDING_DIM, weights=[embedding_matrix], input_length=MAX_SEQUENCE_LENGTH, trainable=True)
+
+    dropout_layer_1 = Dropout(DROPOUT_PROB[0])
+    conv_list = []
+    for index, filtersize in enumerate(FILTER_SIZE):
+        nb_filter = NUM_FILTERS
+        conv = Conv1D(filters=NUM_FILTERS, kernel_size=filtersize, activation='relu')(sequence_input)
+        conv = GlobalMaxPooling1D()(conv)
+        conv_list.append(conv)
+
+    out = Concatenate()(conv_list) if len(conv_list) > 1 else conv_list[0]
+    dropout_layer_2 = Dropout(DROPOUT_PROB[1])
+    activation_layer = Dense(EMBEDDING_DIM, activation="relu")
+    model_output = Dense(len(labels_index), activation="softmax", kernel_constraint=max_norm(MAXNORM))
+
+    graph = Model(sequence_input, out)
+
+    early_stopping = EarlyStopping(monitor='val_acc', patience=1)
+
+    total_accuracy = 0
+    total_precision = 0
+    total_recall = 0
+    total_f1 = 0
+    total_confusion_matrix = 0
+
+    # ========================================
+
+    num_folds =10
+    size = len(labels)
+    subset_size = size/num_folds
+    sum_acc = 0
+    result_label = []
+
+    for index in range(10):
+
+        model_seq = Sequential()
+        model_seq.add(embedding_layer)
+        model_seq.add(dropout_layer_1)
+        model_seq.add(graph)
+        model_seq.add(dropout_layer_2)
+        model_seq.add(model_output)
+
+        model_seq.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+
+        initial_weights = model_seq.get_weights()
+
+
+        if index < size % num_folds:
+            test_start = index*(subset_size+1)
+            test_finish = test_start + subset_size + 1
         else:
-            classTotCnt[i] = classTotCnt[i] + 1
-    for c in classTotCnt:
-        probs = classTotCnt[c] / float(tot)
-        entropy_before = entropy_before - probs * np.log(probs)
+            test_start = (index*subset_size) + (size % num_folds)
+            test_finish = test_start + subset_size
+        
+        test_labels = labels[test_start:test_finish]
+        test_comment_round = X[test_start:test_finish]
+        test_label_round = Y[test_start:test_finish]
+        train_comment_round = []
+        train_label_round = []
+        for j in range(10):
+            if j < size % num_folds:
+                train_start = j*(subset_size+1)
+                train_finish = train_start + subset_size + 1
+            else:
+                train_start = (j*subset_size) + (size % num_folds)
+                train_finish = train_start + subset_size
+            if index != j:
+                if (len(train_comment_round) == 0):
+                    train_comment_round = (X[train_start:train_finish])
+                    train_label_round = (Y[train_start:train_finish])
+                else:
+                    train_comment_round = np.concatenate((train_comment_round,X[train_start:train_finish]))
+                    train_label_round = np.concatenate((train_label_round,Y[train_start:train_finish]))
 
-    nz = X.T.nonzero()
-    pre = 0
-    classCnt = {}
-    featureTot = 0
-    information_gain = []
-    for i in range(0, len(nz[0])):
-        if (i != 0 and nz[0][i] != pre):
-            for notappear in range(pre+1, nz[0][i]):
-                information_gain.append(0)
-            ig = _calIg()
-            information_gain.append(ig)
-            pre = nz[0][i]
-            classCnt = {}
-            featureTot = 0
-        featureTot = featureTot + 1
-        yclass = y[nz[1][i]]
-        if yclass not in classCnt:
-            classCnt[yclass] = 1
-        else:
-            classCnt[yclass] = classCnt[yclass] + 1
-    ig = _calIg()
-    information_gain.append(ig)
+        print "Fold ke : ", index
+        for epoch in range(NUM_EPOCHS):
+            print('Fold: {}'.format(i+1))
+            print('Epoch: {}'.format(epoch+1))
 
-    return np.asarray(information_gain)
+            model_seq.fit(train_comment_round, train_label_round, batch_size=BATCH_SIZE, epochs=1)
 
+            y_pred = model_seq.predict_classes(test_comment_round, batch_size=512)
+            fold_accuracy = accuracy_score(test_labels,y_pred)
 
-def feature_selection (X,Y, number_of_feature):
-	new_X = X
+        result_label = np.concatenate((result_label, y_pred))
+        sum_acc += fold_accuracy
 
-	Z = information_gain(X,Y)
-	Z2 = sorted(Z, reverse=True)
-
-
-
-	for index in range(len(Z)):
-		if (Z[index] <= Z2[number_of_feature]):
-			for a in range(len(X)):
-				new_X[a][index] = 0
-
-	return new_X
-
-# def get_average(feature_vector):
-# 	size = len(feature_vector)
-# 	total = 0
-# 	average = 0
-# 	for index in range(size):
-# 		total += feature_vector[index]
-# 	average = total/size
-# 	return average
-
-def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_vector ,fitur):
-	num_folds = number_of_fold
-	size = len(list_of_label)
-	subset_size = size/num_folds
-	sum_NB_acc = 0
-	sum_DT_acc = 0
-	sum_SVM_acc = 0
-	result_NB_label = []
-	result_DT_label = []
-	result_SVM_label = []
-
-	cv = CountVectorizer()
-
-	Xtemp = cv.fit_transform(list_of_comment).toarray()
-	X = []
-	Y = np.array(list_of_label)
-	word_unknowrn = 0
-
-	for sentence_index in range(len(Xtemp)):
-		total_word = len(Xtemp[sentence_index])
-		word_in_sentence = 0
-		vector_size = len(word_vector[1][0])
-		sum_vector = [0] * vector_size
-		average_vector = [0] * vector_size
-		for word_index in range(total_word):
-			if (Xtemp[sentence_index][word_index] == 1):
-				word_in_sentence += 1
-				word = cv.get_feature_names()[word_index]
-				if word in word_vector[0]:
-					for vector_index in range(vector_size):
-						sum_vector[vector_index] += word_vector[1][word_index][vector_index]
-				else:
-					word_unknowrn += 1
-
-		for vector_index in range(vector_size):
-			if word_in_sentence != 0:
-				average_vector[vector_index] = sum_vector[vector_index]/word_in_sentence
-
-		X.append(average_vector)
-
-	print "Kata tak dikenal = ", word_unknowrn
-
-	new_X = csr_matrix(X).toarray()
-
-	new_X = feature_selection(new_X,Y, fitur)
-
-	for index in range(10):
-		if index < size % num_folds:
-			test_start = index*(subset_size+1)
-			test_finish = test_start + subset_size + 1
-		else:
-			test_start = (index*subset_size) + (size % num_folds)
-			test_finish = test_start + subset_size
-		
-		test_comment_round = X[test_start:test_finish]
-		test_label_round = Y[test_start:test_finish]
-		train_comment_round = []
-		train_label_round = []
-		for j in range(10):
-			if j < size % num_folds:
-				train_start = j*(subset_size+1)
-				train_finish = train_start + subset_size + 1
-			else:
-				train_start = (j*subset_size) + (size % num_folds)
-				train_finish = train_start + subset_size
-			if index != j:
-				if (len(train_comment_round) == 0):
-					train_comment_round = (X[train_start:train_finish])
-					train_label_round = (Y[train_start:train_finish])
-				else:
-					train_comment_round = np.concatenate((train_comment_round,X[train_start:train_finish]))
-					train_label_round = np.concatenate((train_label_round,Y[train_start:train_finish]))
-
-		clf = SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
-	    decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
-	    max_iter=-1, probability=False, random_state=None, shrinking=True,
-	    tol=0.001, verbose=False)
-		clf.fit(train_comment_round, train_label_round)
-		result_SVM_label = np.concatenate((result_SVM_label,clf.predict(test_comment_round)))			
-		sum_SVM_acc += metrics.accuracy_score(test_label_round, clf.predict(test_comment_round))
-	
-
-	print "-- Support Vector Machine --"
-	print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
-	print sum_SVM_acc/num_folds
-	# print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
-
-def inlppreproses (list_of_comment):
-	list_of_processed_comment = []
-	index_start = 0
-	index_finish = 0
-	packet = 1000
-	div_value = len(list_of_comment)//packet
-	mod_value = len(list_of_comment)%packet
-
-	for repeat in range(div_value+1):
-		inlp_input = ""
-		inlp_output = ""
-
-		if (repeat < div_value):
-			for index in range(packet):
-				inlp_input += list_of_comment[repeat*packet + index]
-				inlp_input += "`"
-
-			inlp_output = formalization(inlp_input)
-			inlp_output = remove_stopword(inlp_output)
-
-			for index in range(len(inlp_output)):
-				if (inlp_output[index] == "`"):
-					index_finish = index
-					list_of_processed_comment.append(inlp_output[index_start:index_finish])
-					index_start = index + 1
-		else:
-			for index in range(mod_value):
-				inlp_input += list_of_comment[repeat*packet + index]
-				inlp_input += "`"
-
-			inlp_output = formalization(inlp_input)
-			inlp_output = remove_stopword(inlp_output)
-
-			for index in range(len(inlp_output)):
-				if (inlp_output[index] == "`"):
-					index_finish = index
-					list_of_processed_comment.append(inlp_output[index_start:index_finish])
-					index_start = index + 1
-
-	return list_of_processed_comment
-
-list_of_data = []
-list_of_label = []
-list_of_comment = []
-processed_data = []
-bag_of_feature  = []
-
-list_of_main_data = read_csv('../Resource/all_labeled.csv')
-list_of_additional_data = read_csv('../Resource/addition1.csv')
-list_of_additional_data2 = read_csv('../Resource/addition2.csv')
-print len(list_of_main_data)
-print len(list_of_additional_data)
-print len(list_of_additional_data2)
-
-# total_data = list_of_data
-list_of_data = list_of_main_data + list_of_additional_data + list_of_additional_data2
-
-print "Total Data Model WE = ", len(list_of_data)
-
-for index in range(len(list_of_data)):
-	poster_status = list_of_data[index][2]
-	if poster_status == 'yes':
-		poster = list_of_data[index][0]
-	else:
-		if list_of_data[index][0] != poster:
-			comment = list_of_data[index][1]
-			label = list_of_data[index][3]
-
-			processed_comment = pre_process(comment)
-			bag_of_feature += feature_extraction(nltk.word_tokenize(processed_comment))
-			list_of_label.append(label)
-			list_of_comment.append(processed_comment)
-
-list_of_comment = inlppreproses(list_of_comment)
-
-for repeat in range(1):
-
-	start = time.time()
-
-	sentences = []
-
-	for index in range(len(list_of_comment)):
-		sentences.append(nltk.word_tokenize(pre_process(list_of_comment)))
-	 
-	model = word2vec.Word2Vec(sentences, min_count=1, size=400, window=23, negative=20, iter=40, sg=1)
-	# model.save("model3")
-	# model = word2vec.Word2Vec.load("model3")
-
-	# print model.similarity("barakallah","beli")
-
-	# for index in range(len(model.wv.vocab)):
-	exp_comment = list_of_comment[0:len(list_of_main_data)]
-	exp_label - list_of_comment[0:len(list_of_main_data)]
-
-	list_of_vector = []
-	list_of_word = []
-	for key in model.wv.vocab:
-		list_of_word.append(key)
-		list_of_vector.append(model[key])
-		
-	word_vector = (list_of_word, list_of_vector)
-	print "Vocab Size = ", len(word_vector[0])
-
-	cross_fold_validation(10, exp_comment, exp_label, word_vector, 1000)
-
-	end = time.time()
-	print end-start
+    print confusion_matrix(labels ,result_label, labels=[0, 1, 2])
+    print sum_acc/num_folds
+    printToCSV(result_label, "hasil_CNN")
