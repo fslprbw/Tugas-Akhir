@@ -20,6 +20,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from subprocess import Popen, PIPE, STDOUT
 from gensim.models import word2vec
+from sklearn.externals import joblib
 
 def pre_process(text):
 	#turn emoticon to unicode
@@ -60,11 +61,11 @@ def convert_emoticon (text):
 	result = ""
 
 	if text.group(0).lower()[1:] in emot_positif:
-		result = " _emot_pos_ "
+		result = " _emotpos_ "
 	elif text.group(0).lower()[1:] in emot_negatif:
-		result = " _emot_neg_ "
+		result = " _emotneg_ "
 	else:
-		result = " _emot_netral_ "
+		result = " _emotnetral_ "
 
 	return result
 
@@ -234,6 +235,8 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 
 	Xtemp = feature_selection(Xtemp,Y, fitur)
 
+	word_list = cv.get_feature_names()
+
 	for sentence_index in range(len(Xtemp)):
 		total_word = len(Xtemp[sentence_index])
 		word_in_sentence = 0
@@ -241,12 +244,12 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 		sum_vector = [0] * vector_size
 		average_vector = [0] * vector_size
 		for word_index in range(total_word):
-			if (Xtemp[sentence_index][word_index] == 1):
-				word_in_sentence += 1
-				word = cv.get_feature_names()[word_index]
-				if word in word_vector[0]:
+			word_count = Xtemp[sentence_index][word_index]
+			if (word_count >= 1):
+				word_in_sentence += word_count
+				if word_list[word_index] in word_vector[0]:
 					for vector_index in range(vector_size):
-						sum_vector[vector_index] += word_vector[1][word_index][vector_index]
+						sum_vector[vector_index] += word_count*(word_vector[1][word_index][vector_index])
 				elif word not in unknown_word:
 					unknown_word.append(word)
 
@@ -314,6 +317,79 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, word_v
 	print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
 	printToCSV(result_SVM_label, "hasil_WE")
 
+def classify(list_of_comment, list_of_label, word_vector, test_comment ):
+
+	# # cv = CountVectorizer()
+	# cv = CountVectorizer(input='content', binary=True, tokenizer=lambda text:nltk.word_tokenize(text))
+
+	# Xtemp = cv.fit_transform(list_of_comment).toarray()
+	# X = []
+	# Y = np.array(list_of_label)
+	# unknown_word = []
+
+	# Xtemp = feature_selection(Xtemp,Y, 250)
+
+	# word_list = cv.get_feature_names()
+
+	# for sentence_index in range(len(Xtemp)):
+	# 	total_word = len(Xtemp[sentence_index])
+	# 	word_in_sentence = 0
+	# 	vector_size = len(word_vector[1][0])
+	# 	sum_vector = [0] * vector_size
+	# 	average_vector = [0] * vector_size
+	# 	for word_index in range(total_word):
+	# 		word_count = Xtemp[sentence_index][word_index]
+	# 		if (word_count >= 1):
+	# 			word_in_sentence += word_count
+	# 			if word_list[word_index] in word_vector[0]:
+	# 				for vector_index in range(vector_size):
+	# 					sum_vector[vector_index] += word_count*(word_vector[1][word_index][vector_index])
+	# 			# elif word not in unknown_word:
+	# 				# unknown_word.append(word)
+
+	# 	for vector_index in range(vector_size):
+	# 		if word_in_sentence != 0:
+	# 			average_vector[vector_index] = sum_vector[vector_index]/word_in_sentence
+
+	# 	X.append(average_vector)
+
+	word_list = joblib.load('unigram_wordlist.pkl')
+
+	comment_vector = np.zeros((1, len(word_list)))
+	we_vector = []
+
+	word = nltk.word_tokenize(test_comment)
+
+	for index in range(len(word_list)):
+		if word_list[index] in word:
+			comment_vector[0][index] += 1
+
+	word_in_sentence = 0
+	vector_size = len(word_vector[1][0])
+	sum_vector = [0] * vector_size
+	average_vector = [0] * vector_size
+	for word_index in range(len(comment_vector)):
+		word_count = comment_vector[0][word_index]
+		if (word_count >= 1):
+			word_in_sentence += word_count
+			if word_list[word_index] in word_vector[0]:
+				for vector_index in range(vector_size):
+					sum_vector[vector_index] += word_count*(word_vector[1][word_index][vector_index])
+
+	for vector_index in range(vector_size):
+		if word_in_sentence != 0:
+			average_vector[vector_index] = sum_vector[vector_index]/word_in_sentence
+
+	we_vector.append(average_vector)	
+
+	# clf = SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+ #    decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
+ #    max_iter=-1, probability=False, random_state=None, shrinking=True,
+ #    tol=0.001, verbose=False)
+	# clf.fit(X, Y)
+	# joblib.dump(clf, 'WE-SVM_model.pkl')
+	clf = joblib.load('WE-SVM_model.pkl')
+	print clf.predict(we_vector)[0]
 
 def inlppreproses (list_of_comment):
 	list_of_processed_comment = []
@@ -425,10 +501,11 @@ for repeat in range(1):
 	for index in range(len(total_comment)):
 		sentences.append(nltk.word_tokenize(total_comment[index]))
 	 
-	model = word2vec.Word2Vec(sentences, min_count=1, size=500, window=15, negative=45, iter=90, sg=1, seed=1)
+	model = word2vec.Word2Vec.load('best_model_we')
+	# model = word2vec.Word2Vec(sentences, min_count=1, size=500, window=15, negative=45, iter=90, sg=1, seed=1)
 	end = time.time()
 	print "waktu model = ", end-start
-	model.save("best_model_we")
+	# model.save("best_model_we")
 	# print model.similar_by_word("cuma")
 
 	# for index in range(len(model.wv.vocab)):
@@ -445,6 +522,14 @@ for repeat in range(1):
 	# printToCSV(list_of_word, "list_of_word_test")
 	start = time.time()
 
-	cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 250)
+	# cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 250)
+	# end = time.time()
+	# print "waktu ml = ", end-start
+
+	joblib.dump(word_vector, 'we_word_vector.pkl')
+
+	test_sentence = "alhamdulillah _tandatitik_ terima kasih _emotpos_ _emotpos_"
+
+	classify(experiment_comment, list_of_label, word_vector, test_sentence)
 	end = time.time()
-	print "waktu ml = ", end-start
+	print "Waktu = ", end-start

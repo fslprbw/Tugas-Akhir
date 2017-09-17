@@ -7,7 +7,12 @@ import scipy as scipy
 
 from subprocess import Popen, PIPE, STDOUT
 import re
+import nltk
+import numpy as np
 
+from sklearn.externals import joblib
+from keras.models import load_model
+from keras.preprocessing.sequence import pad_sequences
 
 app = QApplication(sys.argv)
 win = QWidget()
@@ -82,12 +87,8 @@ def pra_proses(text, poster):
    text = unicode(text, 'utf-8')
    text = text.encode('unicode_escape')
 
-   print text
-
    #convert unicode of newline to newline
    text = re.sub(r'\\n',' ',text)
-
-   print text
 
    if ck1.isChecked():
       # Convert www.* or https?://* to URL
@@ -126,37 +127,74 @@ def pra_proses(text, poster):
    return text
 
 def classify(text):
-   #turn emoticon to unicode
-   text = unicode(text, 'utf-8')
-   text = text.encode('unicode_escape')
-   #convert unicode of newline to newline
-   text = re.sub(r'\\n',' ',text)
 
-   text = re.sub('[\s]+', ' ', text)
-   #Convert to lower case
-   text = ''.join(text).lower()
+   out = ""
+   word_list = joblib.load('unigram_wordlist.pkl')
+   
+   comment_vector = np.zeros((1, len(word_list)))
 
-   input = text
+   word = nltk.word_tokenize(text)
+
+   for index in range(len(word_list)):
+      if word_list[index] in word:
+         comment_vector[0][index] += 1
 
    if r1.isChecked():
-      input = "algo 1"
+      clf = joblib.load('unigram-NB_model.pkl')
+      out = clf.predict(comment_vector)[0]
    elif r2.isChecked():
-      input = "algo 2"
+      clf = joblib.load('unigram-DT_model.pkl')
+      out = clf.predict(comment_vector)[0]
    elif r3.isChecked():
-      input = "algo 3"
+      clf = joblib.load('unigram-SVM_model.pkl')
+      out = clf.predict(comment_vector)[0]
    elif r4.isChecked():
-      input = "algo 4"
-   elif r5.isChecked():
-      input = "algo 5"
+      word_vector = joblib.load('we_word_vector.pkl')
+      we_vector = []
 
-   return input
+      word_in_sentence = 0
+      vector_size = len(word_vector[1][0])
+      sum_vector = [0] * vector_size
+      average_vector = [0] * vector_size
+      for word_index in range(len(comment_vector)):
+         word_count = comment_vector[0][word_index]
+         if (word_count >= 1):
+            word_in_sentence += word_count
+            if word_list[word_index] in word_vector[0]:
+               for vector_index in range(vector_size):
+                  sum_vector[vector_index] += word_count*(word_vector[1][word_index][vector_index])
+
+      for vector_index in range(vector_size):
+         if word_in_sentence != 0:
+            average_vector[vector_index] = sum_vector[vector_index]/word_in_sentence
+
+      we_vector.append(average_vector)
+
+      clf = joblib.load('WE-SVM_model.pkl')
+      out = clf.predict(we_vector)[0]
+   elif r5.isChecked():
+      sentence = []
+      sentence.append(text)
+      
+      tokenizer =  joblib.load('wecnn_tokenizer.pkl')
+      text_sequences = tokenizer.texts_to_sequences(sentence)
+
+      we_vector = pad_sequences(text_sequences, maxlen=50, padding="post", truncating="post")
+
+      model_seq = load_model('WE-CNN_model.h5')
+
+      result = model_seq.predict_classes(we_vector, batch_size=512)        
+      reverse_labels_index = {0: 'jawab', 1: 'baca', 2: 'abaikan'}
+      out = [reverse_labels_index[label] for label in result][0]
+
+   return out
 
 def b1_clicked():
-   comment = nm.text()
-   account = acc.text()
+   comment = str(nm.text())
+   account = str(acc.text())
 
    pre_processed_comment = pra_proses(comment, account)
-   result = classify(comment)
+   result = classify(pre_processed_comment)
 
    l_praprosesed.setText(pre_processed_comment)
    l_result.setText(result)

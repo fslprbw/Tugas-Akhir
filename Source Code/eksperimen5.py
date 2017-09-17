@@ -1,4 +1,5 @@
 import csv
+import nltk
 # from BaselineBok import BaselineBok
 from keras.models import Sequential, Model
 from keras.preprocessing.text import Tokenizer
@@ -18,10 +19,11 @@ from keras.callbacks import EarlyStopping
 from sklearn.utils import class_weight
 from collections import Counter
 import csv
+from sklearn.externals import joblib
 # from imblearn.over_sampling import SMOTE, RandomOverSampler
 
 EMBEDDING_DIM = 500 # / 400
-MAX_SEQUENCE_LENGTH = 200 # ?? / 200
+MAX_SEQUENCE_LENGTH = 50 # ?? / 200
 FILTER_SIZE = (3,4,5)
 NUM_FILTERS = 100 #100 - 600 / 100
 DROPOUT_PROB = (0.5, 0.5)
@@ -51,7 +53,7 @@ def shuffle_weights(model, weights=None):
 if __name__ == '__main__':
 
     MODEL_TYPE = 'non-static'
-    file_csv = '../Resource/all_labeled.csv'
+    file_csv = '../Resource/all_preprocessed.csv'
 
     raw_sentences = []
     labels = []
@@ -71,6 +73,9 @@ if __name__ == '__main__':
     tokenizer.fit_on_texts(raw_sentences)
     sequences = tokenizer.texts_to_sequences(raw_sentences)
     word_index = tokenizer.word_index
+
+    # joblib.dump(tokenizer, 'wecnn_tokenizer.pkl')
+
     print('Found %s unique tokens.' % len(word_index))
 
     data = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH, padding="post", truncating="post")
@@ -88,7 +93,6 @@ if __name__ == '__main__':
         embedding_vector = embeddings_index.get(word)
         if embedding_vector is not None:
             embedding_matrix[i] = embedding_vector
-
 
     sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH, EMBEDDING_DIM))
 
@@ -133,20 +137,33 @@ if __name__ == '__main__':
     sum_acc = 0
     result_label = []
 
+    model_seq = Sequential()
+    model_seq.add(embedding_layer)
+    model_seq.add(dropout_layer_1)
+    model_seq.add(graph)
+    model_seq.add(dropout_layer_2)
+    model_seq.add(model_output)
+
+    model_seq.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+
+    model_seq.save_weights('model.h5')
+
+    initial_weights = model_seq.get_weights()
+
+    # text = "alhamdulillah _tandatitik_ terima kasih _emotpos_ _emotpos_ asukon"
+    # sentence = []
+    # sentence.append(text)
+    
+    # text_sequences = tokenizer.texts_to_sequences(sentence)
+
+    # print text_sequences
+
+    # we_vector = pad_sequences(text_sequences, maxlen=MAX_SEQUENCE_LENGTH, padding="post", truncating="post")
+
     for index in range(10):
 
-        model_seq = Sequential()
-        model_seq.add(embedding_layer)
-        model_seq.add(dropout_layer_1)
-        model_seq.add(graph)
-        model_seq.add(dropout_layer_2)
-        model_seq.add(model_output)
-
-        model_seq.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-
-        initial_weights = model_seq.get_weights()
-
-
+        model_seq.load_weights('model.h5')
+  
         if index < size % num_folds:
             test_start = index*(subset_size+1)
             test_finish = test_start + subset_size + 1
@@ -175,18 +192,27 @@ if __name__ == '__main__':
                     train_label_round = np.concatenate((train_label_round,Y[train_start:train_finish]))
 
         print "Fold ke : ", index
-        for epoch in range(NUM_EPOCHS):
-            print('Fold: {}'.format(i+1))
-            print('Epoch: {}'.format(epoch+1))
+        print "Train size = ", len(train_comment_round)
+        print "Test size = ", len(test_comment_round)
+        # for epoch in range(NUM_EPOCHS):
+        #     print('Fold: {}'.format(i+1))
+        #     print('Epoch: {}'.format(epoch+1))
 
-            model_seq.fit(train_comment_round, train_label_round, batch_size=BATCH_SIZE, epochs=1)
+        model_seq.fit(train_comment_round, train_label_round, batch_size=BATCH_SIZE, epochs=NUM_EPOCHS)          
 
-            y_pred = model_seq.predict_classes(test_comment_round, batch_size=512)
-            fold_accuracy = accuracy_score(test_labels,y_pred)
+        y_pred = model_seq.predict_classes(test_comment_round, batch_size=512)
+        fold_accuracy = accuracy_score(test_labels,y_pred)
 
         result_label = np.concatenate((result_label, y_pred))
         sum_acc += fold_accuracy
 
     print confusion_matrix(labels ,result_label, labels=[0, 1, 2])
     print sum_acc/num_folds
-    printToCSV(result_label, "hasil_CNN")
+    printToCSV(result_label, "hasil_CNN_test2")
+
+        # model_seq.fit(X, Y, batch_size=BATCH_SIZE, epochs=NUM_EPOCHS)  
+        # model_seq.save('WE-CNN_model_10epoch.h5')
+
+        # result = model_seq.predict_classes(we_vector, batch_size=512)        
+        # reverse_labels_index = {0: 'jawab', 1: 'baca', 2: 'abaikan'}
+        # print [reverse_labels_index[label] for label in result]

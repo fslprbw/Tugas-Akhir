@@ -20,6 +20,7 @@ from sklearn.svm import SVC
 from sklearn.feature_selection import VarianceThreshold
 from subprocess import Popen, PIPE, STDOUT
 from sklearn.feature_selection import VarianceThreshold
+from sklearn.externals import joblib
 
 def pre_process(text):
 	#turn emoticon to unicode
@@ -27,25 +28,25 @@ def pre_process(text):
 	text = text.encode('unicode_escape')
 	#convert unicode of newline to newline
 	text = re.sub(r'\\n',' ',text)
-	# Convert www.* or https?://* to URL
-	text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _url_ ',text)
-	# #Replace #word with word
-	# text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
-	# # Convert @username to AT_USER
-	# text = re.sub('@'+poster,' _mentionpemilik_ ',text)
-	# text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
-	# #Convert mark
-	# text = re.sub('[/]+', ' ', text)
-	# text = re.sub('[&]+', ' ', text)
-	# text = re.sub('[,]+', ' ', text)
-	# text = re.sub('[.]+', ' _tandatitik_ ', text)
-	# text = re.sub('[?]+', ' _tandatanya_ ', text)
-	# text = re.sub('[!]+', ' _tandaseru_ ', text)
-	# #convert emoticon and symbol
-	# text = re.sub(r'\\U000[^\s]{5}',convert_emoticon,text)
-	# # text = re.sub(r'\\u[\d][^\s]{3}',' _emoticon_ ',text)
-	# #convert digit
-	# text = re.sub('[\d]+', ' _angka_ ', text)
+	# # Convert www.* or https?://* to URL
+	# text = re.sub('((www\.[^\s]+)|(https?://[^\s]+))',' _url_ ',text)
+	#Replace #word with word
+	text = re.sub(r'#([^\s]+)',' _hashtag_ ', text)
+	# Convert @username to AT_USER
+	text = re.sub('@'+poster,' _mentionpemilik_ ',text)
+	text = re.sub('@[^\s]+',' _mentionteman_ ',text)	
+	#Convert mark
+	text = re.sub('[/]+', ' ', text)
+	text = re.sub('[&]+', ' ', text)
+	text = re.sub('[,]+', ' ', text)
+	text = re.sub('[.]+', ' _tandatitik_ ', text)
+	text = re.sub('[?]+', ' _tandatanya_ ', text)
+	text = re.sub('[!]+', ' _tandaseru_ ', text)
+	#convert emoticon and symbol
+	text = re.sub(r'\\U000[^\s]{5}',convert_emoticon,text)
+	# text = re.sub(r'\\u[\d][^\s]{3}',' _emoticon_ ',text)
+	#convert digit
+	text = re.sub('[\d]+', ' _angka_ ', text)
 	# Remove additional white spaces
 	text = re.sub('[\s]+', ' ', text)
 	#Convert to lower case
@@ -60,11 +61,11 @@ def convert_emoticon (text):
 	result = ""
 
 	if text.group(0).lower()[1:] in emot_positif:
-		result = " _emot_pos_ "
+		result = " _emotpos_ "
 	elif text.group(0).lower()[1:] in emot_negatif:
-		result = " _emot_neg_ "
+		result = " _emotneg_ "
 	else:
-		result = " _emot_netral_ "
+		result = " _emotnetral_ "
 
 	return result
 
@@ -327,6 +328,55 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 		 	print " Algorithm not Found"
 
 
+def classify(train_comment, train_label, test_comment, algorithm):
+
+	cv = CountVectorizer()
+	# cv = CountVectorizer(input='content', binary=True, tokenizer=lambda text:nltk.word_tokenize(text))
+
+	X = cv.fit_transform(list_of_comment).toarray()
+	Y = np.array(list_of_label)
+
+	word_list = cv.get_feature_names()
+	joblib.dump(word_list, 'unigram_wordlist.pkl')
+
+	comment_vector = np.zeros((1, len(word_list)))
+
+	word = nltk.word_tokenize(test_comment)
+
+	for index in range(len(word_list)):
+		if word_list[index] in word:
+			comment_vector[0][index] += 1
+
+	if algorithm == "NB":
+		clf = GaussianNB()
+		GaussianNB(priors=None)
+		clf.fit(X, Y)
+		joblib.dump(clf, 'unigram-NB_model.pkl')
+		print clf.predict(comment_vector)[0]
+
+	elif algorithm == "DT":
+
+		clf = DecisionTreeClassifier()
+		clf.fit(X, Y)
+		joblib.dump(clf, 'unigram-DT_model.pkl')
+		print clf.predict(comment_vector)[0]
+
+	elif algorithm == "SVM":
+
+		X = feature_selection(X,Y, 250)
+
+		clf = SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+	    decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
+	    max_iter=-1, probability=False, random_state=None, shrinking=True,
+	    tol=0.001, verbose=False)
+		clf.fit(X, Y)
+		joblib.dump(clf, 'unigram-SVM_model.pkl')
+		print clf.predict(comment_vector)[0]
+	
+	else :
+		 print " Algorithm not Found"
+
+
 def inlppreproses (list_of_comment):
 	list_of_processed_comment = []
 	index_start = 0
@@ -389,7 +439,7 @@ for index in range(len(list_of_data)):
 			list_of_label.append(label)
 			list_of_comment.append(processed_comment)
 
-# list_of_comment = inlppreproses(list_of_comment)
+list_of_comment = inlppreproses(list_of_comment)
 
 printToCSV(list_of_comment, "komen dengan preproses")
 # printToCSV(list_of_label, "label awal")
@@ -398,12 +448,24 @@ print "Jumlah data awal :", len(list_of_data)
 print "Jumlah data model :", len(list_of_label)
 data_distribution(list_of_label)
 
+test_sentence = "alhamdulillah _tandatitik_ terima kasih _emot_pos_ _emot_pos_"
+
 for repeat in range(1):
 
 	start = time.time()
-	cross_fold_validation(10, list_of_comment, list_of_label, "DT", 4295)
+	classify(list_of_comment, list_of_label, test_sentence, "DT")
 	end = time.time()
 	print "Waktu = ", end-start
+
+	# start = time.time()
+	# classify(list_of_comment, list_of_label, test_sentence, "NB")
+	# end = time.time()
+	# print "Waktu = ", end-start
+
+	# start = time.time()
+	# classify(list_of_comment, list_of_label, test_sentence, "SVM")
+	# end = time.time()
+	# print "Waktu = ", end-start
 
 	# start = time.time()
 	# cross_fold_validation(10, list_of_comment, list_of_label, "NB", 250+(repeat*250))
