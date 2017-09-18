@@ -32,7 +32,7 @@ EMBEDDING = 'old' # 'old' | 'new'
 
 # Training parameters
 BATCH_SIZE = 64
-NUM_EPOCHS = 5
+NUM_EPOCHS = 10
 
 def printToCSV (data_list, filename):
     with open('../Resource/'+filename+'.csv', 'w') as csvfile:
@@ -208,7 +208,7 @@ if __name__ == '__main__':
 
     print confusion_matrix(labels ,result_label, labels=[0, 1, 2])
     print sum_acc/num_folds
-    printToCSV(result_label, "hasil_CNN_test2")
+    printToCSV(result_label, "hasil_CNN_test2_10")
 
         # model_seq.fit(X, Y, batch_size=BATCH_SIZE, epochs=NUM_EPOCHS)  
         # model_seq.save('WE-CNN_model_10epoch.h5')
