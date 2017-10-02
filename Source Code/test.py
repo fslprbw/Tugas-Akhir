@@ -38,6 +38,7 @@ ck8 = QCheckBox("Penghapusan Stopword")
 
 l4 = QLabel("Algoritma Pembelajaran")
 r_box = QVBoxLayout()
+r0 = QRadioButton("Bseline SVM")
 r1 = QRadioButton("Unigram + SVM")
 r2 = QRadioButton("Unigram + Decision Tree")
 r3 = QRadioButton("Unigram + Naive Bayes")
@@ -139,14 +140,17 @@ def classify(text):
       if word_list[index] in word:
          comment_vector[0][index] += 1
 
-   if r1.isChecked():
-      clf = joblib.load('unigram-NB_model.pkl')
+   if r0.isChecked():
+      clf = joblib.load('baseline-SVM_model.pkl')
+      out = clf.predict(comment_vector)[0]
+   elif r1.isChecked():
+      clf = joblib.load('unigram-SVM_model.pkl')
       out = clf.predict(comment_vector)[0]
    elif r2.isChecked():
       clf = joblib.load('unigram-DT_model.pkl')
       out = clf.predict(comment_vector)[0]
    elif r3.isChecked():
-      clf = joblib.load('unigram-SVM_model.pkl')
+      clf = joblib.load('unigram-NB_model.pkl')
       out = clf.predict(comment_vector)[0]
    elif r4.isChecked():
       word_vector = joblib.load('we_word_vector.pkl')
@@ -216,6 +220,7 @@ def window():
    ck_box.addStretch()
    fbox.addRow(l3,ck_box)
 
+   r_box.addWidget(r0)
    r_box.addWidget(r1)
    r_box.addWidget(r2)
    r_box.addWidget(r3)

@@ -196,6 +196,17 @@ def feature_selection (X,Y, number_of_feature):
 
 	list_of_gain = sorted(list_of_gain, reverse=True)
 
+	sorted_feature = []
+
+	cv_temp = joblib.load('countvec.pkl')
+	for sort in range(len(list_of_gain)):
+		test = "" 
+		test += cv_temp.get_feature_names()[int(list_of_gain[sort][1])]
+		print test
+		sorted_feature.append(test)
+
+	printToCSV(sorted_feature, "sorted feature selection")
+
 	selected_feature = []
 
 	if (number_of_feature > len(Z)):
@@ -209,7 +220,9 @@ def feature_selection (X,Y, number_of_feature):
 		if (index not in selected_feature):
 			for a in range(len(X)):
 				new_X[a][index] = 0
-
+		# else:
+		# 	cv_temp = joblib.load('countvec.pkl')
+		# 	print cv_temp.get_feature_names()[index]
 
 	return new_X
 
@@ -246,7 +259,9 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 	X = cv.fit_transform(list_of_comment).toarray()
 	Y = np.array(list_of_label)
 
-	# X = feature_selection(X,Y, fitur)
+	joblib.dump(cv, 'countvec.pkl')
+
+	X = feature_selection(X,Y, fitur)
 
 	print "Total Kata = ", len(X[0])
 
@@ -278,6 +293,8 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 				else:
 					train_comment_round = np.concatenate((train_comment_round,X[train_start:train_finish]))
 					train_label_round = np.concatenate((train_label_round,Y[train_start:train_finish]))
+
+		# train_comment_round = feature_selection(train_comment_round,train_label_round, fitur)
 
 		if algorithm == "NB":
 			clf = GaussianNB()
@@ -322,7 +339,7 @@ def cross_fold_validation(number_of_fold, list_of_comment, list_of_label, algori
 		print confusion_matrix(Y,result_SVM_label, labels=["jawab", "baca", "abaikan"])
 		print sum_SVM_acc/num_folds
 		print (classification_report(Y, result_SVM_label, target_names=["jawab", "baca", "abaikan"]))
-		# printToCSV(result_SVM_label, "hasil_SVM")
+		printToCSV(result_SVM_label, "hasil_SVM")
 
 	else :
 		 	print " Algorithm not Found"
@@ -363,14 +380,14 @@ def classify(train_comment, train_label, test_comment, algorithm):
 
 	elif algorithm == "SVM":
 
-		X = feature_selection(X,Y, 250)
+		# X = feature_selection(X,Y, 250)
 
 		clf = SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
 	    decision_function_shape=None, degree=3, gamma='auto', kernel='linear',
 	    max_iter=-1, probability=False, random_state=None, shrinking=True,
 	    tol=0.001, verbose=False)
 		clf.fit(X, Y)
-		joblib.dump(clf, 'unigram-SVM_model.pkl')
+		joblib.dump(clf, 'baseline-SVM_model.pkl')
 		print clf.predict(comment_vector)[0]
 	
 	else :
@@ -435,11 +452,12 @@ for index in range(len(list_of_data)):
 			comment = list_of_data[index][1]
 			label = list_of_data[index][3]
 
-			processed_comment = pre_process(comment)
+			# processed_comment = pre_process(comment)
 			list_of_label.append(label)
-			list_of_comment.append(processed_comment)
+			# list_of_comment.append(processed_comment)
+			list_of_comment.append(comment)
 
-list_of_comment = inlppreproses(list_of_comment)
+# list_of_comment = inlppreproses(list_of_comment)
 
 printToCSV(list_of_comment, "komen dengan preproses")
 # printToCSV(list_of_label, "label awal")
@@ -448,14 +466,14 @@ print "Jumlah data awal :", len(list_of_data)
 print "Jumlah data model :", len(list_of_label)
 data_distribution(list_of_label)
 
-test_sentence = "alhamdulillah _tandatitik_ terima kasih _emot_pos_ _emot_pos_"
+# test_sentence = "alhamdulillah _tandatitik_ terima kasih _emot_pos_ _emot_pos_"
 
 for repeat in range(1):
 
-	start = time.time()
-	classify(list_of_comment, list_of_label, test_sentence, "DT")
-	end = time.time()
-	print "Waktu = ", end-start
+	# start = time.time()
+	# classify(list_of_comment, list_of_label, test_sentence, "DT")
+	# end = time.time()
+	# print "Waktu = ", end-start
 
 	# start = time.time()
 	# classify(list_of_comment, list_of_label, test_sentence, "NB")
@@ -468,12 +486,12 @@ for repeat in range(1):
 	# print "Waktu = ", end-start
 
 	# start = time.time()
-	# cross_fold_validation(10, list_of_comment, list_of_label, "NB", 250+(repeat*250))
+	# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 750)
 	# end = time.time()
 	# print "Waktu = ", end-start
 
-	# start = time.time()
-	# cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 250)
-	# # print "Fitur dipilih = ", 1250+(repeat*250)
-	# end = time.time()
-	# print "Waktu = ", end-start
+	start = time.time()
+	cross_fold_validation(10, list_of_comment, list_of_label, "SVM", 250)
+	# print "Fitur dipilih = ", 1250+(repeat*250)
+	end = time.time()
+	print "Waktu = ", end-start

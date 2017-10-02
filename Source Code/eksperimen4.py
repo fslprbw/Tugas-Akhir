@@ -522,14 +522,14 @@ for repeat in range(1):
 	# printToCSV(list_of_word, "list_of_word_test")
 	start = time.time()
 
-	# cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 250)
-	# end = time.time()
-	# print "waktu ml = ", end-start
-
-	joblib.dump(word_vector, 'we_word_vector.pkl')
-
-	test_sentence = "alhamdulillah _tandatitik_ terima kasih _emotpos_ _emotpos_"
-
-	classify(experiment_comment, list_of_label, word_vector, test_sentence)
+	cross_fold_validation(10, experiment_comment, list_of_label, word_vector, 250)
 	end = time.time()
-	print "Waktu = ", end-start
+	print "waktu ml = ", end-start
+
+	# joblib.dump(word_vector, 'we_word_vector.pkl')
+
+	# test_sentence = "alhamdulillah _tandatitik_ terima kasih _emotpos_ _emotpos_"
+
+	# classify(experiment_comment, list_of_label, word_vector, test_sentence)
+	# end = time.time()
+	# print "Waktu = ", end-start
